@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#04050d" />
+  <!-- 手机"添加到主屏幕"后像原生 App 一样全屏运行 -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="生日快乐" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href='data:application/manifest+json,{"name":"Happy Birthday","short_name":"生日快乐","start_url":".","display":"fullscreen","orientation":"portrait","background_color":"%2304050d","theme_color":"%2304050d"}' />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>" />
+  <title>🎂小安 Happy Birthday</title>
+  <!--
+  ══════════════════════════════════════════════════════════
+  电子生日蛋糕 · 星河蛋糕 (根据照片素材 1:1 前端还原)
+  用法: 直接双击用浏览器打开即可, 单文件零依赖, 可直接发给朋友
+  定制称呼: index.html?to=兄弟的名字   例如 index.html?to=阿强
+  交互: 首次点击开启生日歌(蜡烛燃着时循环播放); 点蜡烛吹灭 → 漫天烟花 + 彩带礼花 + 飘零祝福语
+  ══════════════════════════════════════════════════════════
+-->
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      height: 100%;
+      overflow: hidden;
+      background: #04050d;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none
+    }
+
+    #scene {
+      position: fixed;
+      inset: 0;
+      display: block;
+      touch-action: none;
+      animation: fadeIn 1.6s ease both
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0
+      }
+
+      to {
+        opacity: 1
+      }
+    }
+
+    /* 底部提示 */
+    .hint {
+      position: fixed;
+      left: 50%;
+      bottom: calc(7.5% + env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      color: #9fb0d8;
+      font: 14px/1 "PingFang SC", "Microsoft YaHei", sans-serif;
+      letter-spacing: .25em;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 5;
+      transition: opacity .5s;
+      animation: breathe 2.2s ease-in-out infinite
+    }
+
+    @keyframes breathe {
+
+      0%,
+      100% {
+        opacity: .45
+      }
+
+      50% {
+        opacity: 1
+      }
+    }
+
+    /* 右下角手写体标题 (还原照片右下角 happy birthday) */
+    .title {
+      position: fixed;
+      right: 26px;
+      bottom: calc(20px + env(safe-area-inset-bottom));
+      text-align: right;
+      pointer-events: none;
+      z-index: 5
+    }
+
+    .title .t1 {
+      font-family: "Snell Roundhand", "Savoye LET", "Brush Script MT", "Segoe Script", cursive;
+      font-style: italic;
+      font-size: clamp(26px, 4vw, 44px);
+      color: #f0dfae;
+      text-shadow: 0 0 22px rgba(255, 209, 102, .5), 0 0 60px rgba(255, 160, 60, .25)
+    }
+
+    .title .t2 {
+      margin-top: 2px;
+      font-size: clamp(9px, 1.1vw, 12px);
+      letter-spacing: .55em;
+      color: #7d8db8;
+      font-family: Georgia, serif
+    }
+
+    /* 吹灭蜡烛后的祝福语 */
+    .msg {
+      position: fixed;
+      left: 50%;
+      top: 30%;
+      transform: translate(-50%, -50%) scale(.55);
+      opacity: 0;
+      text-align: center;
+      pointer-events: none;
+      z-index: 6;
+      transition: all .9s cubic-bezier(.18, 1.4, .35, 1)
+    }
+
+    .msg.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1)
+    }
+
+    .msg .m1 {
+      font-size: clamp(30px, 6.5vw, 64px);
+      font-weight: 900;
+      letter-spacing: .14em;
+      font-family: Georgia, "Times New Roman", serif;
+      background: linear-gradient(180deg, #fff8dd 15%, #ffd166 55%, #ff9f43 90%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      filter: drop-shadow(0 0 26px rgba(255, 190, 80, .55))
+    }
+
+    .msg .m2 {
+      margin-top: 10px;
+      font-size: clamp(15px, 2.2vw, 22px);
+      color: #e8eefc;
+      letter-spacing: .2em;
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      text-shadow: 0 0 14px rgba(160, 190, 255, .4)
+    }
+
+    .msg .m3 {
+      margin-top: 8px;
+      font-size: clamp(12px, 1.6vw, 15px);
+      color: #93a5d6;
+      letter-spacing: .35em;
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif
+    }
+
+    /* 按钮 */
+    button {
+      position: fixed;
+      z-index: 9;
+      background: rgba(18, 26, 58, .55);
+      color: #ead9a5;
+      border: 1px solid rgba(255, 209, 102, .4);
+      border-radius: 999px;
+      padding: 9px 20px;
+      font-size: 13px;
+      letter-spacing: .2em;
+      cursor: pointer;
+      font-family: inherit;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: .3s
+    }
+
+    button:hover {
+      box-shadow: 0 0 20px rgba(255, 209, 102, .35)
+    }
+
+    #mute {
+      top: calc(18px + env(safe-area-inset-top));
+      right: 18px;
+      padding: 8px 12px;
+      font-size: 16px
+    }
+
+    #relight {
+      left: 50%;
+      bottom: 13%;
+      transform: translateX(-50%);
+      display: none;
+      animation: breathe 2.2s ease-in-out infinite
+    }
+
+    #relight:hover {
+      transform: translate(-50%, -2px)
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="scene"></canvas>
+
+  <div class="hint" id="hint">🕯 点一点蜡烛许愿吹灭它 · 首次点击开启生日歌 🎵</div>
+
+  <div class="title">
+    <div class="t1">happy birthday</div>
+    <div class="t2">TO MY BEST BRO</div>
+  </div>
+
+  <div class="msg" id="msg">
+    <div class="m1">HAPPY BIRTHDAY</div>
+    <div class="m2" id="toName">To 我的好兄弟 安巍</div>
+    <div class="m3">愿你眼里有星河 · 心中有宇宙</div>
+  </div>
+
+  <button id="mute" title="音乐开关">🔊</button>
+  <button id="relight">✨ 再点亮一次</button>
+
+  <script>
+    'use strict';
+    /* ================= 基础工具 ================= */
+    const TAU = Math.PI * 2;
+    const cv = document.getElementById('scene');
+    const ctx = cv.getContext('2d');
+    const bgCv = document.createElement('canvas');   // 背景离屏画布(静态)
+    const cakeCv = document.createElement('canvas');   // 蛋糕离屏画布(静态)
+    let W = 0, H = 0, DPR = 1;
+    const L = {};                                      // 蛋糕布局参数
+
+    const PALETTE = ['#ffd166', '#ff9f43', '#ff6b9d', '#4ecdc4', '#74b9ff', '#f8f9fa', '#a29bfe', '#ffe8c2'];
+
+    const rnd = (a = 1, b) => b === undefined ? Math.random() * a : a + Math.random() * (b - a);
+    function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296 } }
+    function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; }
+
+    /* 平滑值噪声: 比叠加正弦更有机, 用于火焰形态与星环细节 */
+    function makeNoise(seed) {
+      const R = mulberry32(seed);
+      const v = Array.from({ length: 512 }, () => R() * 2 - 1);
+      return t => {
+        t = ((t % 512) + 512) % 512;
+        const i = t | 0, f = t - i, u = f * f * (3 - 2 * f);
+        return v[i] * (1 - u) + v[(i + 1) % 512] * u;
+      };
+    }
+    const nzA = makeNoise(11), nzB = makeNoise(23), nzC = makeNoise(37), nzD = makeNoise(51), nzE = makeNoise(67);
+
+    /* 发光圆点: 大光晕 + 实心核心 */
+    function glowDot(c, x, y, r, col, a) {
+      if (r <= 0 || a <= 0) return;
+      c.globalAlpha = a * 0.30; c.fillStyle = col;
+      c.beginPath(); c.arc(x, y, r * 2.8, 0, TAU); c.fill();
+      c.globalAlpha = a;
+      c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
+      c.globalAlpha = 1;
+    }
+    /* 柔和星云斑块 */
+    function blob(c, x, y, r, col, a) {
+      const g = c.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, hexA(col, a)); g.addColorStop(1, hexA(col, 0));
+      c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
+    }
+    /* 五角星路径 */
+    function star(c, x, y, r, rot = 0) {
+      c.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const a = rot + i * Math.PI / 5 - Math.PI / 2;
+        const rr = i % 2 ? r * 0.45 : r;
+        const px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr;
+        i ? c.lineTo(px, py) : c.moveTo(px, py);
+      }
+      c.closePath();
+    }
+    function roundRect(c, x, y, w, h, r) {
+      c.beginPath();
+      c.moveTo(x + r, y);
+      c.arcTo(x + w, y, x + w, y + h, r);
+      c.arcTo(x + w, y + h, x, y + h, r);
+      c.arcTo(x, y + h, x, y, r);
+      c.arcTo(x, y, x + w, y, r);
+      c.closePath();
+    }
+
+    /* ================= 状态 ================= */
+    let stars = [], floaters = [], orbits = [];
+    let smoke = [], confetti = [], sparks = [], sparkles = [];
+    let shoot = null, shootTimer = 4;
+    let state = 'lit';            // lit → blowing → out → celebrating
+    let blowT = 0, outT = 0, celebrated = false, rainT = 0;
+    let mx = 0, my = 0, px = 0, py = 0;   // 鼠标视差(目标/平滑)
+    let gustAmp = 0;                      // 当前阵风强度 0~1
+    const gust = { t: 0, dur: 0, dir: 1, next: 2.5 };
+    let fw = [], fparts = [], flashes = [], blessings = [];   // 烟花火箭/爆炸星屑/爆炸闪光/飘零祝福
+    let fwTimer = 0, blTimer = 0;
+
+    /* ================= 布局 ================= */
+    function layout() {
+      const s = Math.min(W, H);
+      L.s = s;
+      L.cx = W / 2;
+      L.baseY = H * 0.80;                       // 蛋糕底
+      L.rw = s * 0.205;                      // 蛋糕半径
+      L.cakeH = s * 0.30;                       // 蛋糕高
+      L.topRy = s * 0.042;                      // 顶面椭圆纵向半径
+      L.baseRy = s * 0.050;                      // 底面椭圆纵向半径
+      L.topY = L.baseY - L.cakeH;              // 蛋糕顶
+      L.candleW = s * 0.016;
+      L.candleH = s * 0.115;
+      L.candleBase = L.topY + L.topRy * 0.2;
+      L.candleTop = L.candleBase - L.candleH;
+      L.flameY = L.candleTop - 6;              // 火焰根部
+    }
+
+    /* ================= 背景 (静态预渲染) ================= */
+    function renderBG() {
+      const c = bgCv.getContext('2d');
+      c.setTransform(DPR, 0, 0, DPR, 0, 0);
+      c.fillStyle = '#04050d'; c.fillRect(0, 0, W, H);
+
+      // 深空星云
+      const R = mulberry32(7);
+      const cols = ['#1c2a6e', '#31255f', '#123a5e', '#3a1e5c', '#0e2a4a'];
+      for (let i = 0; i < 6; i++)
+        blob(c, R() * W, R() * H * 0.85, L.s * (0.25 + R() * 0.3), cols[i % cols.length], 0.13);
+      // 蛋糕背后中央光晕
+      blob(c, L.cx, L.topY + L.cakeH * 0.5, L.s * 0.55, '#3b57c4', 0.10);
+      // 暗角
+      const g = c.createRadialGradient(W / 2, H * 0.45, Math.min(W, H) * 0.35, W / 2, H * 0.5, Math.max(W, H) * 0.75);
+      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.55)');
+      c.fillStyle = g; c.fillRect(0, 0, W, H);
+    }
+
+    /* ================= 蛋糕 (静态预渲染) ================= */
+    function renderCake() {
+      const c = cakeCv.getContext('2d');
+      c.setTransform(DPR, 0, 0, DPR, 0, 0);
+      c.clearRect(0, 0, W, H);
+      const { cx, topY, baseY, rw, topRy, baseRy } = L;
+      const R = mulberry32(20240812);   // 固定种子: 装饰在窗口缩放后保持一致
+      let g;
+
+      /* ---- 白色托盘 ---- */
+      blob(c, cx, baseY + baseRy * 1.1, rw * 1.5, '#000000', 0.5);
+      g = c.createLinearGradient(0, baseY, 0, baseY + baseRy * 2.4);
+      g.addColorStop(0, '#f4f7ff'); g.addColorStop(0.6, '#c6d2e6'); g.addColorStop(1, '#8fa2c4');
+      c.fillStyle = g;
+      c.beginPath(); c.ellipse(cx, baseY + baseRy * 0.55, rw * 1.42, baseRy * 1.75, 0, 0, TAU); c.fill();
+      g = c.createLinearGradient(0, baseY - 4, 0, baseY + baseRy * 1.4);
+      g.addColorStop(0, '#eef3fd'); g.addColorStop(1, '#b9c7e0');
+      c.fillStyle = g;
+      c.beginPath(); c.ellipse(cx, baseY + baseRy * 0.30, rw * 1.26, baseRy * 1.32, 0, 0, TAU); c.fill();
+      c.strokeStyle = 'rgba(255,255,255,0.65)'; c.lineWidth = 1.5;
+      c.beginPath(); c.ellipse(cx, baseY + baseRy * 0.55, rw * 1.42, baseRy * 1.75, 0, Math.PI * 1.05, Math.PI * 1.95); c.stroke();
+      c.fillStyle = 'rgba(25,35,70,0.5)';
+      c.beginPath(); c.ellipse(cx, baseY + baseRy * 0.22, rw * 1.02, baseRy * 1.0, 0, 0, TAU); c.fill();
+
+      /* ---- 蛋糕侧身 (深蓝星河圆柱) ---- */
+      const bodyPath = () => {
+        c.beginPath();
+        c.moveTo(cx + rw, topY);
+        c.lineTo(cx + rw, baseY);
+        c.ellipse(cx, baseY, rw, baseRy, 0, 0, Math.PI, false);
+        c.lineTo(cx - rw, topY);
+        c.closePath();
+      };
+      bodyPath();
+      g = c.createLinearGradient(cx - rw, 0, cx + rw, 0);
+      g.addColorStop(0, '#070b20'); g.addColorStop(0.16, '#0e1740');
+      g.addColorStop(0.5, '#1f2f7e'); g.addColorStop(0.84, '#0e1740'); g.addColorStop(1, '#070b20');
+      c.fillStyle = g; c.fill();
+
+      c.save(); bodyPath(); c.clip();
+      // 星云斑块
+      for (let i = 0; i < 14; i++) {
+        const x = cx + (R() * 2 - 1) * rw * 0.92, y = topY + R() * L.cakeH;
+        blob(c, x, y, L.s * (0.02 + R() * 0.05),
+          ['#3f5efb', '#9b5de5', '#f15bb5', '#22d3ee', '#ffd166'][(R() * 5) | 0], 0.10 + R() * 0.14);
+      }
+      // 金色泼溅
+      for (let i = 0; i < 5; i++)
+        blob(c, cx + (R() * 2 - 1) * rw * 0.8, topY + L.cakeH * (0.15 + R() * 0.7),
+          L.s * (0.012 + R() * 0.02), '#ffd166', 0.28);
+      // 星星
+      for (let i = 0; i < 26; i++) {
+        const x = cx + (R() * 2 - 1) * rw * 0.9, y = topY + L.cakeH * (0.08 + R() * 0.86);
+        const r = L.s * (0.004 + R() * 0.008);
+        c.save(); c.translate(x, y); c.rotate(R() * TAU);
+        star(c, 0, 0, r);
+        c.fillStyle = ['#ffd166', '#f8f9fa', '#ff6b9d', '#4ecdc4', '#ffe8c2'][(R() * 5) | 0];
+        c.shadowColor = c.fillStyle; c.shadowBlur = 8; c.fill();
+        c.restore();
+      }
+      // 彩色小点
+      for (let i = 0; i < 46; i++)
+        glowDot(c, cx + (R() * 2 - 1) * rw * 0.92, topY + L.cakeH * R(),
+          L.s * (0.002 + R() * 0.004), PALETTE[(R() * 8) | 0], 0.5 + R() * 0.5);
+      // 底部压暗 + 两侧立体感
+      g = c.createLinearGradient(0, topY, 0, baseY);
+      g.addColorStop(0, 'rgba(2,4,14,0)'); g.addColorStop(1, 'rgba(2,4,14,0.5)');
+      c.fillStyle = g; c.fillRect(cx - rw, topY, rw * 2, L.cakeH + baseRy);
+      g = c.createLinearGradient(cx - rw, 0, cx + rw, 0);
+      g.addColorStop(0, 'rgba(2,4,14,0.55)'); g.addColorStop(0.2, 'rgba(2,4,14,0)');
+      g.addColorStop(0.8, 'rgba(2,4,14,0)'); g.addColorStop(1, 'rgba(2,4,14,0.55)');
+      c.fillStyle = g; c.fillRect(cx - rw, topY, rw * 2, L.cakeH + baseRy);
+      c.restore();
+
+      /* ---- 顶面 (奶白星系糖霜) ---- */
+      g = c.createLinearGradient(cx - rw, topY - topRy, cx + rw, topY + topRy);
+      g.addColorStop(0, '#e9f0ff'); g.addColorStop(0.5, '#a9bdf0'); g.addColorStop(1, '#5e7bd0');
+      c.fillStyle = g;
+      c.beginPath(); c.ellipse(cx, topY, rw, topRy, 0, 0, TAU); c.fill();
+
+      c.save();
+      c.beginPath(); c.ellipse(cx, topY, rw * 0.97, topRy * 0.95, 0, 0, TAU); c.clip();
+      for (let i = 0; i < 8; i++)
+        blob(c, cx + (R() * 2 - 1) * rw * 0.8, topY + (R() * 2 - 1) * topRy * 0.6,
+          L.s * (0.015 + R() * 0.035), ['#f15bb5', '#9b5de5', '#22d3ee', '#ffd166', '#3f5efb'][(R() * 5) | 0], 0.16);
+      // 涡旋糖霜纹
+      for (let i = 0; i < 4; i++) {
+        c.strokeStyle = ['rgba(255,209,102,0.4)', 'rgba(241,91,181,0.3)', 'rgba(34,211,238,0.3)', 'rgba(255,255,255,0.3)'][i];
+        c.lineWidth = 1.5 + R() * 1.5;
+        c.beginPath();
+        c.ellipse(cx + (R() * 2 - 1) * rw * 0.25, topY + (R() * 2 - 1) * topRy * 0.3,
+          rw * (0.3 + R() * 0.55), topRy * (0.4 + R() * 0.6), R() * 0.8 - 0.4, 0, TAU);
+        c.stroke();
+      }
+      for (let i = 0; i < 12; i++) {
+        const x = cx + (R() * 2 - 1) * rw * 0.85, y = topY + (R() * 2 - 1) * topRy * 0.62;
+        c.save(); c.translate(x, y); c.rotate(R() * TAU);
+        star(c, 0, 0, L.s * (0.003 + R() * 0.006));
+        c.fillStyle = ['#ffd166', '#ff6b9d', '#4ecdc4', '#f8f9fa'][(R() * 4) | 0]; c.fill();
+        c.restore();
+      }
+      for (let i = 0; i < 50; i++)
+        glowDot(c, cx + (R() * 2 - 1) * rw * 0.9, topY + (R() * 2 - 1) * topRy * 0.68,
+          L.s * 0.0018 + R() * L.s * 0.002, PALETTE[(R() * 8) | 0], 0.55 + R() * 0.45);
+      blob(c, cx - rw * 0.15, topY - topRy * 0.15, rw * 0.5, '#ffffff', 0.35);
+      c.restore();
+
+      c.strokeStyle = 'rgba(255,255,255,0.55)'; c.lineWidth = 2;
+      c.beginPath(); c.ellipse(cx, topY, rw, topRy, 0, 0, TAU); c.stroke();
+
+      /* ---- 蜡烛 (薰衣草紫) ---- */
+      const cbw = L.candleW, cbt = L.candleTop, cbb = L.candleBase;
+      g = c.createLinearGradient(cx - cbw, 0, cx + cbw, 0);
+      g.addColorStop(0, '#b39ddb'); g.addColorStop(0.4, '#e8d9f8'); g.addColorStop(1, '#9575cd');
+      c.fillStyle = g;
+      roundRect(c, cx - cbw / 2, cbt, cbw, cbb - cbt, cbw * 0.3); c.fill();
+      // 蜡油滴
+      blob(c, cx - cbw * 0.5, cbt + cbw * 1.2, cbw * 0.5, '#f3e8fb', 0.9);
+      blob(c, cx + cbw * 0.45, cbt + cbw * 2.1, cbw * 0.45, '#f3e8fb', 0.85);
+      // 烛芯
+      c.strokeStyle = '#3a2b2b'; c.lineWidth = 2; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(cx, cbt + 2); c.quadraticCurveTo(cx + 1, cbt - 4, cx + 2, cbt - 7); c.stroke();
+    }
+
+    /* ================= 动态元素初始化 ================= */
+    function initStars() {
+      stars = Array.from({ length: 130 }, () => ({
+        x: rnd(W), y: rnd(H * 0.95), r: rnd(0.4, 1.6),
+        ph: rnd(TAU), sp: rnd(0.4, 1.8), big: Math.random() < 0.07
+      }));
+    }
+    function initFloaters() {
+      const n = Math.round(Math.min(W, H) * 0.16);
+      floaters = Array.from({ length: n }, () => ({
+        x: rnd(W), y: rnd(H), r: Math.pow(Math.random(), 2) * 7 + 1,
+        c: PALETTE[(Math.random() * PALETTE.length) | 0],
+        a: rnd(0.4, 0.95), ph: rnd(TAU), sp: rnd(0.4, 1.4),
+        vy: rnd(6, 22), vx: rnd(-8, 8)
+      }));
+    }
+    function initOrbits() {
+      const mk = (rxM, ryM, rot, cyF, dir, sp, n) => ({
+        rx: L.rw * rxM, ry: L.rw * ryM, rot, dir, sp,
+        cy: L.topY + L.cakeH * cyF,
+        wp: rnd(TAU),   // 轨道面进动相位
+        parts: Array.from({ length: n }, () => {
+          const hero = Math.random() < 0.18;   // 少量明亮大粒子
+          return {
+            off: rnd(TAU),
+            sp: rnd(0.85, 1.18),               // 每颗粒子速度略有差异
+            r: hero ? rnd(2.4, 3.4) : rnd(0.9, 2.6),
+            c: PALETTE[(Math.random() * PALETTE.length) | 0],
+            a: hero ? 1 : rnd(0.5, 0.95),
+            tail: hero ? (8 + rnd(6)) | 0 : (4 + rnd(5)) | 0,
+            tw: rnd(1.2, 4), ph2: rnd(TAU),    // 闪烁
+            bobA: rnd(1.5, 5), bobS: rnd(0.3, 0.9), ph3: rnd(TAU)   // 离面漂浮
+          };
+        })
+      });
+      orbits = [
+        mk(1.50, 0.52, -0.42, 0.18, 1, 0.55, 16),
+        mk(1.78, 0.62, 0.36, 0.46, -1, 0.34, 13),
+        mk(1.18, 0.36, -0.12, 0.32, 1, 0.72, 11)
+      ];
+    }
+
+    /* ================= 音频 (Web Audio 合成, 无外部文件) ================= */
+    let AC = null, master = null, musicGain = null, sfxGain = null, muted = false;
+function ensureAudio(){
+  if(!AC){
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    master = AC.createGain();
+    master.gain.value = muted ? 0 : 0.85;
+    // 音乐/音效分轨: 吹灭蜡烛后音乐渐弱, 烟花声更突出
+    musicGain = AC.createGain(); musicGain.gain.value = 1;
+    sfxGain = AC.createGain(); sfxGain.gain.value = 1;
+    musicGain.connect(master); sfxGain.connect(master);
+    // 轻混响感
+    const delay = AC.createDelay(); delay.delayTime.value = 0.27;
+    const fb = AC.createGain(); fb.gain.value = 0.22;
+    const wet = AC.createGain(); wet.gain.value = 0.18;
+    master.connect(AC.destination);
+    master.connect(delay); delay.connect(fb); fb.connect(delay);
+    delay.connect(wet); wet.connect(AC.destination);
+  }
+  if(AC.state === 'suspended') AC.resume();
+}
+    function tone(f, t0, dur, vol) {
+      const mk = (type, mult, v) => {
+        const o = AC.createOscillator(), g = AC.createGain();
+        o.type = type; o.frequency.value = f * mult;
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.linearRampToValueAtTime(v, t0 + 0.025);
+        g.gain.setValueAtTime(v, t0 + Math.max(dur * 0.6, dur - 0.08));
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        o.connect(g); g.connect(musicGain);
+        o.start(t0); o.stop(t0 + dur + 0.05);
+      };
+      mk('triangle', 1, vol); mk('sine', 2, vol * 0.22); mk('sine', 1, vol * 0.35);
+    }
+    const NOTE = { G4: 392, A4: 440, B4: 493.88, C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99 };
+    const SONG = [   // 《祝你生日快乐》
+      ['G4', .75], ['G4', .25], ['A4', 1], ['G4', 1], ['C5', 1], ['B4', 2],
+      ['G4', .75], ['G4', .25], ['A4', 1], ['G4', 1], ['D5', 1], ['C5', 2],
+      ['G4', .75], ['G4', .25], ['G5', 1], ['E5', 1], ['C5', 1], ['B4', 1], ['A4', 2],
+      ['F5', .75], ['F5', .25], ['E5', 1], ['C5', 1], ['D5', 1], ['C5', 2.6]
+    ];
+    /* 循环播放: 首次交互启动, 之后《生日快乐》一直循环 */
+    let musicStarted = false, songEnd = 0;
+    function scheduleSong() {
+      const beat = 0.5;
+      const t0 = Math.max(AC.currentTime + 0.15, songEnd + 0.5);
+      let dur = 0;
+      for (const [n, b] of SONG) { tone(NOTE[n], t0 + dur, b * beat * 0.92, 0.30); dur += b * beat; }
+      songEnd = t0 + dur;
+    }
+    function startMusic() {          // 浏览器要求首次用户交互后才能出声
+      if (musicStarted || !AC) return;
+      musicStarted = true;
+      scheduleSong();
+    }
+    function boomSound() {           // 烟花爆炸闷响
+      if (!AC) return;
+      const dur = 0.9;
+      const buf = AC.createBuffer(1, AC.sampleRate * dur, AC.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2);
+      const src = AC.createBufferSource(); src.buffer = buf;
+      const f = AC.createBiquadFilter(); f.type = 'lowpass';
+      f.frequency.setValueAtTime(400, AC.currentTime);
+      f.frequency.exponentialRampToValueAtTime(60, AC.currentTime + dur);
+      const g = AC.createGain();
+      g.gain.setValueAtTime(0.75, AC.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + dur);
+      src.connect(f); f.connect(g); g.connect(sfxGain); src.start();
+    }
+    function playWhoosh() {   // 吹气声
+      if (!AC) return;
+      const dur = 0.7;
+      const buf = AC.createBuffer(1, AC.sampleRate * dur, AC.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      const src = AC.createBufferSource(); src.buffer = buf;
+      const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 0.8;
+      f.frequency.setValueAtTime(900, AC.currentTime);
+      f.frequency.exponentialRampToValueAtTime(180, AC.currentTime + dur);
+      const g = AC.createGain();
+      g.gain.setValueAtTime(0.0001, AC.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.5, AC.currentTime + 0.08);
+      g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + dur);
+      src.connect(f); f.connect(g); g.connect(sfxGain); src.start();
+    }
+
+    /* ================= 特效生成 ================= */
+    function spawnSmoke() {
+      for (let i = 0; i < 30; i++)
+        smoke.push({
+          x: L.cx + rnd(-2, 2), y: L.flameY - rnd(0, 10),
+          vy: rnd(20, 45), gr: rnd(9, 16), r: rnd(2, 4),
+          ph: rnd(TAU), age: 0, life: rnd(1.0, 2.0)
+        });
+    }
+    function spawnConfetti() {
+      for (let i = 0; i < 150; i++) {
+        const type = Math.random() < 0.25 ? 'star' : 'rect';
+        confetti.push({
+          x: L.cx + rnd(-20, 20), y: L.topY - L.s * 0.12,
+          vx: rnd(-260, 260), vy: rnd(-620, -260), g: 760,
+          rot: rnd(TAU), vr: rnd(-8, 8), w: rnd(5, 9), h: rnd(8, 16),
+          c: PALETTE[(Math.random() * PALETTE.length) | 0],
+          age: 0, life: rnd(2.2, 3.6), type, ph: rnd(TAU)
+        });
+      }
+    }
+    function spawnRain() {   // 庆祝时的金星雨
+      confetti.push({
+        x: rnd(W), y: -20, vx: rnd(-20, 20), vy: rnd(30, 80), g: 70,
+        rot: rnd(TAU), vr: rnd(-3, 3), w: rnd(4, 7), h: rnd(6, 11),
+        c: Math.random() < 0.6 ? '#ffd166' : (Math.random() < 0.5 ? '#f8f9fa' : '#ffe8c2'),
+        age: 0, life: rnd(4, 6), type: Math.random() < 0.4 ? 'star' : 'rect', ph: rnd(TAU)
+      });
+    }
+
+    /* ---- 漫天烟花 & 飘零祝福 ---- */
+    const BLESSINGS = ['生日快乐', '平安喜乐','安巍', '前程似锦', '万事胜意', '得偿所愿','生日快乐',
+     '健康快乐', '友谊长存', '未来可期', '好运连连', '笑口常开', '岁岁常欢愉', '年年皆胜意','安子',
+     ' 开学', '生日快乐，安巍','愿你眼里有星河 · 心中有宇宙',' 学习进步','生日快乐，小安','生日快乐','安巍',
+      '所求皆如愿', '所行化坦途', '日日是好日', '被世界温柔以待', '眼里有光 心里有海', '好运正在派送',
+       '星辰大海为你闪耀', '又长大一岁啦', '生日快乐，万事胜意', '愿你一生努力，一生被爱', '小安','愿你一生努力，一生被爱', '愿你一生努力，一生被爱',
+      ];
+    function spawnRocket() {
+      const ty = rnd(H * 0.08, H * 0.40);
+      fw.push({
+        x: rnd(W * 0.12, W * 0.88), y: H + 10, vx: rnd(-25, 25),
+        vy: -Math.sqrt(2 * 130 * (H + 10 - ty)) * rnd(0.96, 1.0),   // 恰好升到目标高度
+        ty, c: PALETTE[(Math.random() * PALETTE.length) | 0]
+      });
+    }
+    function explode(r) {
+      boomSound();
+      const n = 50 + (Math.random() * 60 | 0);
+      const speed = rnd(120, 260);
+      for (let i = 0; i < n; i++) {
+        const a = rnd(TAU);
+        const sp = speed * rnd(0.35, 1) * (Math.random() < 0.25 ? 1.25 : 1);
+        fparts.push({
+          x: r.x, y: r.y, px: r.x, py: r.y,
+          vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+          g: rnd(50, 110), drag: rnd(1.2, 2.2),
+          age: 0, life: rnd(1.2, 2.4), r: rnd(1, 2.4),
+          c: Math.random() < 0.75 ? r.c : (Math.random() < 0.5 ? '#ffffff' : '#ffe8c2'),
+          tw: rnd(6, 14), twp: rnd(TAU)
+        });
+      }
+      flashes.push({ x: r.x, y: r.y, age: 0, life: 0.35, r0: rnd(30, 60), c: r.c });
+      if (Math.random() < 0.45) spawnBlessing(r.x, r.y);   // 烟花里绽出祝福
+    }
+    function spawnBlessing(x, y) {
+      blessings.push({
+        txt: BLESSINGS[(Math.random() * BLESSINGS.length) | 0],
+        x: x !== undefined ? x : rnd(W * 0.08, W * 0.92),
+        y: y !== undefined ? y : H + 30,
+        vy: rnd(26, 52),
+        swA: rnd(10, 26), swS: rnd(0.4, 1.0), ph: rnd(TAU),   // 水平摇曳
+        size: rnd(13, 26),
+        c: Math.random() < 0.55 ? '#ffd166' : (Math.random() < 0.5 ? '#f8f9fa' : '#ffe8c2'),
+        age: 0, life: rnd(5, 8), glow: rnd(8, 16)
+      });
+    }
+    function sparkleBurst(x, y) {
+      for (let i = 0; i < 14; i++) {
+        const a = rnd(TAU), sp = rnd(40, 170);
+        sparkles.push({
+          x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
+          age: 0, life: rnd(0.4, 0.9), r: rnd(1, 2.6),
+          c: PALETTE[(Math.random() * PALETTE.length) | 0]
+        });
+      }
+    }
+    function inCandle(x, y) {
+      return Math.abs(x - L.cx) < L.s * 0.13 && y > L.flameY - L.s * 0.15 && y < L.topY + L.s * 0.03;
+    }
+
+    /* ================= 交互 ================= */
+    const hint = document.getElementById('hint');
+    const msg = document.getElementById('msg');
+    const relightBtn = document.getElementById('relight');
+    const muteBtn = document.getElementById('mute');
+
+    function blowOut() {
+      state = 'blowing'; blowT = 0;
+      playWhoosh();
+      hint.style.animation = 'none';   // 先停掉呼吸动画, 否则会覆盖 opacity
+      hint.style.opacity = 0;
+      if (AC && musicGain) musicGain.gain.setTargetAtTime(0.3, AC.currentTime, 0.5);   // 音乐渐渐变小, 让位给烟花
+    }
+    function celebrate() {
+      spawnConfetti();
+      for (let i = 0; i < 6; i++) spawnBlessing(rnd(W * 0.1, W * 0.9), rnd(H * 0.35, H * 0.9));
+      fwTimer = 0.15;   // 礼花未落, 烟花先起
+      msg.classList.add('show');
+      relightBtn.style.display = 'block';
+    }
+    relightBtn.addEventListener('click', () => {
+      state = 'lit'; celebrated = false; outT = 0;
+      fw = []; fparts = []; flashes = []; blessings = [];   // 清空上一轮庆祝残留
+      if (AC && musicGain) musicGain.gain.setTargetAtTime(1, AC.currentTime, 0.1);   // 音乐恢复音量
+      msg.classList.remove('show');
+      relightBtn.style.display = 'none';
+      hint.style.animation = '';
+      hint.style.opacity = '';
+      sparkleBurst(L.cx, L.flameY - 10);
+    });
+    muteBtn.addEventListener('click', () => {
+      muted = !muted;
+      muteBtn.textContent = muted ? '🔇' : '🔊';
+      if (master) master.gain.value = muted ? 0 : 0.85;
+    });
+    /* 浏览器要求首次用户交互后才能播放声音: 任意点击即开启生日歌 */
+    document.addEventListener('pointerdown', () => { ensureAudio(); startMusic(); }, { passive: true });
+    /* 兼容老版 iOS/微信 WebView: 触摸结束也解锁音频 */
+    document.addEventListener('touchend', () => { ensureAudio(); startMusic(); }, { passive: true });
+    addEventListener('pointermove', e => {
+      mx = (e.clientX / W) * 2 - 1;
+      my = (e.clientY / H) * 2 - 1;
+      cv.style.cursor = inCandle(e.clientX, e.clientY) ? 'pointer' : 'default';
+    });
+    cv.addEventListener('pointerdown', e => {
+      ensureAudio();
+      if (state === 'lit' && inCandle(e.clientX, e.clientY)) blowOut();
+      else sparkleBurst(e.clientX, e.clientY);
+    });
+
+    /* ================= 帧更新 ================= */
+    function update(dt, t) {
+      // 视差平滑
+      px += (mx - px) * 0.05;
+      py += (my - py) * 0.05;
+      // 火焰阵风: 随机气流让火苗忽明忽暗、向一侧倾倒
+      gustAmp = 0;
+      if (state === 'lit') {
+        gust.next -= dt;
+        if (gust.dur > 0) {
+          gust.t += dt;
+          const k = gust.t / gust.dur;
+          if (k >= 1) { gust.dur = 0; gust.next = rnd(2.5, 7); }
+          else gustAmp = Math.sin(Math.PI * k);
+        } else if (gust.next <= 0) {
+          gust.dur = rnd(0.35, 0.7); gust.t = 0;
+          gust.dir = Math.random() < 0.5 ? -1 : 1;
+        }
+      }
+      // 漂浮粒子
+      for (const f of floaters) {
+        f.x += f.vx * dt; f.y -= f.vy * dt;
+        if (f.y < -30) { f.y = H + 30; f.x = rnd(W); }
+        if (f.x < -30) f.x = W + 30;
+        if (f.x > W + 30) f.x = -30;
+      }
+      // 火焰火星 (阵风时明显增多、随风偏移)
+      if (state === 'lit' && Math.random() < 0.10 + gustAmp * 0.25)
+        sparks.push({
+          x: L.cx + rnd(-3, 3) + gustAmp * gust.dir * 4, y: L.flameY - L.s * 0.045,
+          vx: rnd(-14, 14) + gustAmp * gust.dir * 30, vy: rnd(-60, -25), age: 0, life: rnd(0.5, 1.1),
+          r: rnd(0.8, 1.8), c: Math.random() < 0.7 ? '#ffd166' : '#ff9f43'
+        });
+      for (const s of sparks) { s.age += dt; s.vy += 80 * dt; s.x += s.vx * dt; s.y += s.vy * dt; }
+      sparks = sparks.filter(s => s.age < s.life);
+      // 烟雾
+      for (const s of smoke) { s.age += dt; s.x += Math.sin(t * 2 + s.ph) * 10 * dt; s.y -= s.vy * dt; s.r += s.gr * dt; }
+      smoke = smoke.filter(s => s.age < s.life);
+      // 彩带
+      for (const p of confetti) {
+        p.age += dt; p.vy += p.g * dt;
+        p.vx *= Math.max(0, 1 - 1.2 * dt);
+        p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+      }
+      confetti = confetti.filter(p => p.age < p.life && p.y < H + 40);
+      // 漫天烟花 & 飘零祝福 (吹灭蜡烛后的庆祝)
+      if (state === 'celebrating') {
+        fwTimer -= dt;
+        if (fwTimer <= 0) {
+          fwTimer = rnd(0.5, 1.3);
+          spawnRocket();
+          if (Math.random() < 0.35) spawnRocket();
+        }
+        blTimer -= dt;
+        if (blTimer <= 0) { blTimer = rnd(0.45, 0.9); spawnBlessing(); }
+      }
+      for (const r of fw) {
+        r.x += r.vx * dt; r.y += r.vy * dt; r.vy += 130 * dt;
+        if (Math.random() < 0.5)   // 火箭尾焰小火花
+          fparts.push({
+            x: r.x, y: r.y, px: r.x, py: r.y, vx: rnd(-15, 15), vy: rnd(5, 30),
+            g: 30, drag: 1, age: 0, life: rnd(0.3, 0.6), r: rnd(0.6, 1.2),
+            c: r.c, tw: 10, twp: 0
+          });
+        if (r.y <= r.ty || r.vy >= -60) { explode(r); r.dead = true; }
+      }
+      fw = fw.filter(r => !r.dead);
+      for (const p of fparts) {
+        p.age += dt; p.px = p.x; p.py = p.y;
+        const dr = Math.max(0, 1 - p.drag * dt);
+        p.vx *= dr; p.vy = p.vy * dr + p.g * dt;
+        p.x += p.vx * dt; p.y += p.vy * dt;
+      }
+      fparts = fparts.filter(p => p.age < p.life);
+      for (const f of flashes) f.age += dt;
+      flashes = flashes.filter(f => f.age < f.life);
+      for (const b of blessings) { b.age += dt; b.y -= b.vy * dt; }
+      blessings = blessings.filter(b => b.age < b.life && b.y > -50);
+      // 点击星光
+      for (const s of sparkles) { s.age += dt; s.vy += 220 * dt; s.vx *= Math.max(0, 1 - 2 * dt); s.x += s.vx * dt; s.y += s.vy * dt; }
+      sparkles = sparkles.filter(s => s.age < s.life);
+      // 流星
+      shootTimer -= dt;
+      if (!shoot && shootTimer <= 0) {
+        shoot = {
+          x: rnd(W * 0.1, W * 0.7), y: rnd(H * 0.05, H * 0.25),
+          vx: rnd(320, 520), vy: rnd(120, 220), age: 0, life: 0.9
+        };
+        shootTimer = rnd(5, 10);
+      }
+      if (shoot) {
+        shoot.age += dt; shoot.x += shoot.vx * dt; shoot.y += shoot.vy * dt;
+        if (shoot.age > shoot.life) shoot = null;
+      }
+      // 状态机: lit → blowing → out → celebrating
+      if (state === 'blowing') {
+        blowT += dt;
+        if (blowT >= 0.5) { state = 'out'; outT = 0; spawnSmoke(); }
+      } else if (state === 'out' || state === 'celebrating') {
+        outT += dt;
+        if (!celebrated && outT > 0.9) { celebrated = true; state = 'celebrating'; celebrate(); }
+      }
+      if (state === 'celebrating' && outT < 10) {
+        rainT -= dt;
+        if (rainT <= 0) { rainT = 0.12; spawnRain(); }
+      }
+      // 生日歌循环调度: 一遍结束后自动排下一遍
+      if (musicStarted && AC && AC.state === 'running' && AC.currentTime > songEnd - 0.2) scheduleSong();
+    }
+
+    /* ================= 绘制 ================= */
+    function drawOrbits(t, far) {
+      for (const o of orbits) {
+        // 轨道面缓慢进动 (轻微摆动, 更立体)
+        const rot = o.rot + Math.sin(t * 0.13 + o.wp) * 0.035;
+        const cos = Math.cos(rot), sin = Math.sin(rot);
+        const pos = tt => {
+          const lx = Math.cos(tt) * o.rx, ly = Math.sin(tt) * o.ry;
+          return [L.cx + lx * cos - ly * sin, o.cy + lx * sin + ly * cos];
+        };
+        // 柔光轨道线: 多层描边模拟发光尘埃环
+        ctx.lineCap = 'round';
+        const ringPass = far
+          ? [[5, 0.025], [2.5, 0.045], [1.1, 0.07]]      // 远: 整圈, 更柔更淡
+          : [[4, 0.04], [1.4, 0.11]];                    // 近: 前半圈
+        for (const [w, a] of ringPass) {
+          ctx.strokeStyle = `rgba(${far ? '150,175,255' : '175,200,255'},${a})`;
+          ctx.lineWidth = w;
+          ctx.beginPath();
+          ctx.ellipse(L.cx, o.cy, o.rx, o.ry, rot, 0, far ? TAU : Math.PI);
+          ctx.stroke();
+        }
+        for (const p of o.parts) {
+          const th = t * o.sp * o.dir * p.sp + p.off;
+          const behind = Math.sin(th) < 0;
+          if (behind !== far) continue;
+          // 径向轻微离面漂浮 (bokeh 景深感)
+          let [x, y] = pos(th);
+          const bob = Math.sin(t * p.bobS + p.ph3) * p.bobA;
+          const dx = x - L.cx, dy = y - o.cy;
+          const dl = Math.hypot(dx, dy) || 1;
+          x += dx / dl * bob; y += dy / dl * bob;
+          const twk = 0.72 + 0.28 * Math.sin(t * p.tw + p.ph2);
+          const dim = far ? 0.62 : 1;
+          // 彗尾: 圆头折线逐段渐隐渐细, 比圆点链更顺滑
+          let hx = x, hy = y;
+          for (let k = 1; k <= p.tail; k++) {
+            const f = 1 - k / p.tail;
+            const [qx, qy] = pos(th - k * 0.05 * o.dir / p.sp);
+            ctx.strokeStyle = hexA(p.c, p.a * f * f * twk * dim);
+            ctx.lineWidth = Math.max(0.5, p.r * 1.7 * (0.25 + 0.75 * f));
+            ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(qx, qy); ctx.stroke();
+            hx = qx; hy = qy;
+          }
+          glowDot(ctx, x, y, p.r * twk, p.c, p.a * twk * dim);
+        }
+      }
+    }
+    /* 火焰形态计算: 平滑噪声驱动的高/宽/摆动/亮度, 供暖光与火焰共用 */
+    function flameCalc(t) {
+      if (state !== 'lit' && state !== 'blowing') return null;
+      const blow = state === 'blowing' ? Math.min(blowT / 0.5, 1) : 0;
+      const sc = 1 - blow;
+      const jit = 1 + blow * 5;   // 被吹时抖动加剧
+      const lean = nzA(t * 0.55) * 3.2 + gustAmp * gust.dir * 7;          // 慢速倾斜 + 阵风
+      const sway = lean + nzB(t * 4.2) * 1.6 * jit;                       // 快速微颤
+      const hF = 1 + nzC(t * 1.9) * 0.07 + nzD(t * 6.8) * 0.035 * jit - gustAmp * 0.16;
+      const wF = 1 + nzE(t * 2.6) * 0.06 + nzB(t * 9.1) * 0.02 * jit;
+      const intensity = (0.9 + nzC(t * 3.1) * 0.1) * sc * (1 - gustAmp * 0.22);
+      return { sc, jit, sway, fh: L.s * 0.068 * hF * sc, fw: L.candleW * 1.9 * wF * sc, intensity };
+    }
+    function drawWarmLight(t) {
+      const F = flameCalc(t);
+      if (!F) return;
+      const a = 0.22 * F.intensity * (0.9 + 0.1 * nzC(t * 2.7));
+      ctx.save();
+      ctx.beginPath(); ctx.ellipse(L.cx, L.topY, L.rw * 0.95, L.topRy * 0.9, 0, 0, TAU); ctx.clip();
+      const g = ctx.createRadialGradient(L.cx, L.flameY, 0, L.cx, L.flameY, L.s * 0.30);
+      g.addColorStop(0, `rgba(255,190,110,${a})`);
+      g.addColorStop(1, 'rgba(255,190,110,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(L.cx - L.rw, L.topY - L.topRy, L.rw * 2, L.topRy * 2);
+      ctx.restore();
+    }
+    function drawFlame(t) {
+      const F = flameCalc(t);
+      if (!F) return;
+      const { fh, fw, sway, sc, jit, intensity } = F;
+      // 火焰轮廓: 左右两侧独立鼓动, 火尖端点漂移, 整体随倾斜微转
+      const flamePath = (w, h, sd) => {
+        const lw = w * (1 + nzA(t * 3.7 + 40) * 0.10 * jit);
+        const rw = w * (1 + nzB(t * 3.3 + 80) * 0.10 * jit);
+        const tipX = sd * 1.6 + nzD(t * 5.3) * w * 0.22 * jit;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(-lw, -h * 0.30, -lw * 0.62, -h * 0.78, tipX, -h);
+        ctx.bezierCurveTo(rw * 0.62, -h * 0.78, rw, -h * 0.30, 0, 0);
+        ctx.closePath();
+      };
+      ctx.save();
+      ctx.translate(L.cx, L.flameY);
+      ctx.rotate(sway * 0.012);
+      ctx.globalCompositeOperation = 'lighter';   // 加性发光: 光与光叠加更真实
+
+      // 大光晕 (双层衰减)
+      const gr = L.s * 0.32 * (1 + 0.05 * nzC(t * 2.3)) * sc;
+      const gg = ctx.createRadialGradient(0, -fh * 0.45, 0, 0, -fh * 0.45, gr);
+      gg.addColorStop(0, `rgba(255,180,90,${0.22 * intensity})`);
+      gg.addColorStop(0.4, `rgba(255,150,60,${0.10 * intensity})`);
+      gg.addColorStop(1, 'rgba(255,150,60,0)');
+      ctx.fillStyle = gg;
+      ctx.beginPath(); ctx.arc(0, -fh * 0.45, gr, 0, TAU); ctx.fill();
+
+      // 外焰: 垂直渐变 (根部亮橙 → 顶梢消散), 真实火焰顶梢从不是硬边
+      let g = ctx.createLinearGradient(0, 0, 0, -fh);
+      g.addColorStop(0, `rgba(255,170,60,${0.95 * sc})`);
+      g.addColorStop(0.45, `rgba(255,130,25,${0.85 * sc})`);
+      g.addColorStop(0.8, `rgba(255,90,15,${0.45 * sc})`);
+      g.addColorStop(1, 'rgba(255,80,10,0)');
+      flamePath(fw, fh, sway);
+      ctx.fillStyle = g; ctx.fill();
+
+      // 内焰
+      g = ctx.createLinearGradient(0, 0, 0, -fh * 0.74);
+      g.addColorStop(0, `rgba(255,235,150,${0.95 * sc})`);
+      g.addColorStop(0.6, `rgba(255,205,90,${0.85 * sc})`);
+      g.addColorStop(1, 'rgba(255,180,60,0)');
+      flamePath(fw * 0.62, fh * 0.74, sway * 0.7);
+      ctx.fillStyle = g; ctx.fill();
+
+      // 焰心
+      g = ctx.createLinearGradient(0, 0, 0, -fh * 0.46);
+      g.addColorStop(0, `rgba(255,255,245,${0.95 * sc})`);
+      g.addColorStop(0.7, `rgba(255,250,220,${0.85 * sc})`);
+      g.addColorStop(1, 'rgba(255,240,190,0)');
+      flamePath(fw * 0.34, fh * 0.46, sway * 0.4);
+      ctx.fillStyle = g; ctx.fill();
+
+      // 焰心根部蓝区 (蜡芯附近的不完全燃烧带)
+      ctx.fillStyle = `rgba(90,140,255,${0.45 * sc})`;
+      ctx.beginPath(); ctx.ellipse(0, -fw * 0.18, fw * 0.30, fw * 0.22, 0, 0, TAU); ctx.fill();
+
+      // 偶尔向上窜出的小火舌
+      if (state === 'lit' && nzE(t * 1.3) > 0.55) {
+        const tk = Math.min(1, (nzE(t * 1.3) - 0.55) / 0.45);
+        ctx.fillStyle = `rgba(255,190,80,${0.28 * tk * sc})`;
+        flamePath(fw * 0.3, fh * (0.9 + 0.35 * tk), sway * 1.4);
+        ctx.fill();
+      }
+
+      // 烛芯亮点
+      ctx.fillStyle = `rgba(255,220,150,${0.8 * sc})`;
+      ctx.beginPath(); ctx.arc(0, 0, 1.6, 0, TAU); ctx.fill();
+
+      ctx.restore();
+    }
+    function draw(t) {
+      ctx.clearRect(0, 0, W, H);
+      ctx.drawImage(bgCv, 0, 0, W, H);
+
+      // 闪烁星星
+      for (const s of stars) {
+        const a = 0.22 + 0.78 * (0.5 + 0.5 * Math.sin(t * s.sp + s.ph));
+        ctx.globalAlpha = a; ctx.fillStyle = '#dfe8ff';
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, TAU); ctx.fill();
+        if (s.big) {
+          ctx.globalAlpha = a * 0.5;
+          ctx.fillRect(s.x - s.r * 4, s.y - 0.4, s.r * 8, 0.8);
+          ctx.fillRect(s.x - 0.4, s.y - s.r * 4, 0.8, s.r * 8);
+        }
+      }
+      ctx.globalAlpha = 1;
+
+      // 流星
+      if (shoot) {
+        const k = 1 - shoot.age / shoot.life;
+        const x2 = shoot.x - shoot.vx * 0.18, y2 = shoot.y - shoot.vy * 0.18;
+        const g = ctx.createLinearGradient(shoot.x, shoot.y, x2, y2);
+        g.addColorStop(0, `rgba(255,255,255,${0.9 * k})`);
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.strokeStyle = g; ctx.lineWidth = 2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(shoot.x, shoot.y); ctx.lineTo(x2, y2); ctx.stroke();
+        glowDot(ctx, shoot.x, shoot.y, 1.6, '#ffffff', k);
+      }
+
+      // 远景星环 (蛋糕后方)
+      ctx.save(); ctx.translate(px * 6, py * 4);
+      drawOrbits(t, true);
+      ctx.restore();
+
+      // 蛋糕 + 烛光 + 火焰
+      ctx.save(); ctx.translate(px * 10, py * 7);
+      ctx.drawImage(cakeCv, 0, 0, W, H);
+      drawWarmLight(t);
+      drawFlame(t);
+      for (const s of sparks) {
+        const k = 1 - s.age / s.life;
+        glowDot(ctx, s.x, s.y, s.r, s.c, k * 0.9);
+      }
+      ctx.restore();
+
+      // 近景星环 (蛋糕前方)
+      ctx.save(); ctx.translate(px * 14, py * 10);
+      drawOrbits(t, false);
+      ctx.restore();
+
+      // 漂浮彩色光点
+      ctx.save(); ctx.translate(px * 8, py * 6);
+      for (const f of floaters) {
+        const tw = 0.55 + 0.45 * Math.sin(t * f.sp + f.ph);
+        glowDot(ctx, f.x, f.y, f.r, f.c, f.a * tw);
+      }
+      ctx.restore();
+
+      // 烟雾
+      for (const s of smoke) {
+        const k = s.age / s.life, a = 0.30 * (1 - k);
+        const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r);
+        g.addColorStop(0, `rgba(190,200,220,${a})`);
+        g.addColorStop(1, 'rgba(190,200,220,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, TAU); ctx.fill();
+      }
+
+      // 彩带礼花
+      for (const p of confetti) {
+        const k = 1 - p.age / p.life, a = Math.min(1, k * 2);
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.globalAlpha = a;
+        if (p.type === 'star') { star(ctx, 0, 0, p.w * 0.8); ctx.fillStyle = p.c; ctx.fill(); }
+        else {
+          const hEff = p.h * Math.abs(Math.sin(p.ph + p.age * 6));
+          ctx.fillStyle = p.c; ctx.fillRect(-p.w / 2, -hEff / 2, p.w, hEff);
+        }
+        ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+
+      // 烟花: 上升火箭 (拖尾光条)
+      for (const r of fw) {
+        const g = ctx.createLinearGradient(r.x, r.y, r.x - r.vx * 0.05, r.y - r.vy * 0.05);
+        g.addColorStop(0, hexA(r.c, 0.9)); g.addColorStop(1, hexA(r.c, 0));
+        ctx.strokeStyle = g; ctx.lineWidth = 2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(r.x, r.y); ctx.lineTo(r.x - r.vx * 0.05, r.y - r.vy * 0.05); ctx.stroke();
+        glowDot(ctx, r.x, r.y, 1.8, r.c, 0.9);
+      }
+      // 烟花: 爆炸星屑 (拖尾线段 + 闪烁坠落)
+      for (const p of fparts) {
+        const k = 1 - p.age / p.life;
+        const a = k * (0.55 + 0.45 * Math.sin(t * p.tw + p.twp));
+        if (a <= 0.01) continue;
+        ctx.strokeStyle = hexA(p.c, a * 0.85);
+        ctx.lineWidth = p.r * 1.4;
+        ctx.beginPath(); ctx.moveTo(p.px, p.py); ctx.lineTo(p.x, p.y); ctx.stroke();
+      }
+      // 烟花: 爆炸闪光
+      for (const f of flashes) {
+        const k = f.age / f.life, rr = f.r0 * (1 + k * 1.6);
+        const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, rr);
+        g.addColorStop(0, hexA(f.c, 0.35 * (1 - k)));
+        g.addColorStop(1, hexA(f.c, 0));
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(f.x, f.y, rr, 0, TAU); ctx.fill();
+      }
+      // 飘零的祝福语 (摇曳上升, 渐显渐隐)
+      for (const b of blessings) {
+        const fi = Math.min(1, b.age / 0.8) * Math.min(1, (b.life - b.age) / 1.5);
+        if (fi <= 0) continue;
+        ctx.save();
+        ctx.font = `600 ${b.size}px "PingFang SC","Microsoft YaHei",sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.shadowColor = b.c; ctx.shadowBlur = b.glow;
+        ctx.fillStyle = hexA(b.c, 0.85 * fi);
+        ctx.fillText(b.txt, b.x + Math.sin(t * b.swS + b.ph) * b.swA, b.y);
+        ctx.restore();
+      }
+
+      // 点击星光
+      for (const s of sparkles) {
+        const k = 1 - s.age / s.life;
+        glowDot(ctx, s.x, s.y, s.r, s.c, k);
+      }
+
+      // 熄灭后的烛芯余烬
+      if ((state === 'out' || state === 'celebrating') && outT < 2.2)
+        glowDot(ctx, L.cx + 2, L.flameY, 2.2, '#ff8c42', (1 - outT / 2.2) * 0.8);
+    }
+
+    /* ================= 主循环 & 自适应 ================= */
+    let last = 0, time = 0;
+    function frame(now) {
+      const dt = Math.min((now - last) / 1000, 0.05);
+      last = now; time += dt;
+      update(dt, time);
+      draw(time);
+      requestAnimationFrame(frame);
+    }
+    function resize() {
+      DPR = Math.min(window.devicePixelRatio || 1, 2);
+      W = innerWidth; H = innerHeight;
+      for (const c of [cv, bgCv, cakeCv]) { c.width = W * DPR; c.height = H * DPR; }
+      cv.style.width = W + 'px'; cv.style.height = H + 'px';
+      bgCv.getContext('2d').setTransform(DPR, 0, 0, DPR, 0, 0);
+      cakeCv.getContext('2d').setTransform(DPR, 0, 0, DPR, 0, 0);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      layout(); renderBG(); renderCake();
+      initStars(); initFloaters(); initOrbits();
+    }
+    let rzT;
+    addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(resize, 150); });
+
+    /* 定制称呼: index.html?to=名字 */
+    const to = new URLSearchParams(location.search).get('to');
+    if (to) document.getElementById('toName').textContent = 'To ' + to;
+
+    resize();
+    requestAnimationFrame(ts => { last = ts; requestAnimationFrame(frame); });
+  </script>
+</body>
+
+</html>
