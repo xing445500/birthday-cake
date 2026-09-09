@@ -622,6 +622,7 @@ function ensureAudio(){
      ' 开学', '生日快乐，安巍','愿你眼里有星河 · 心中有宇宙',' 学习进步','生日快乐，小安','生日快乐','安巍',
       '所求皆如愿', '所行化坦途', '日日是好日', '被世界温柔以待', '眼里有光 心里有海', '好运正在派送',
        '星辰大海为你闪耀', '又长大一岁啦', '生日快乐，万事胜意', '愿你一生努力，一生被爱', '小安','愿你一生努力，一生被爱', '愿你一生努力，一生被爱',
+       'MC小安', 'MC安子', 'MC安巍', 'MC小安', 'MC安子',
       ];
     function spawnRocket() {
       const ty = rnd(H * 0.08, H * 0.40);
@@ -648,18 +649,20 @@ function ensureAudio(){
         });
       }
       flashes.push({ x: r.x, y: r.y, age: 0, life: 0.35, r0: rnd(30, 60), c: r.c });
-      if (Math.random() < 0.45) spawnBlessing(r.x, r.y);   // 烟花里绽出祝福
+      if (Math.random() < 0.6) spawnBlessing(r.x, r.y);   // 烟花里绽出祝福
     }
     function spawnBlessing(x, y) {
+      const txt = BLESSINGS[(Math.random() * BLESSINGS.length) | 0];
+      const isMC = txt.indexOf('MC') === 0;   // MC 昵称: 更大更亮, 飘得更久
       blessings.push({
-        txt: BLESSINGS[(Math.random() * BLESSINGS.length) | 0],
+        txt,
         x: x !== undefined ? x : rnd(W * 0.08, W * 0.92),
         y: y !== undefined ? y : H + 30,
         vy: rnd(26, 52),
         swA: rnd(10, 26), swS: rnd(0.4, 1.0), ph: rnd(TAU),   // 水平摇曳
-        size: rnd(13, 26),
-        c: Math.random() < 0.55 ? '#ffd166' : (Math.random() < 0.5 ? '#f8f9fa' : '#ffe8c2'),
-        age: 0, life: rnd(5, 8), glow: rnd(8, 16)
+        size: isMC ? rnd(24, 34) : rnd(13, 26),
+        c: isMC ? '#ffd166' : (Math.random() < 0.55 ? '#ffd166' : (Math.random() < 0.5 ? '#f8f9fa' : '#ffe8c2')),
+        age: 0, life: isMC ? rnd(7, 10) : rnd(5, 8), glow: isMC ? rnd(16, 24) : rnd(8, 16)
       });
     }
     function sparkleBurst(x, y) {
@@ -775,12 +778,12 @@ function ensureAudio(){
       const party = state === 'celebrating';
       fwTimer -= dt;
       if (fwTimer <= 0) {
-        fwTimer = party ? rnd(0.5, 1.3) : rnd(0.9, 1.8);
+        fwTimer = party ? rnd(0.35, 0.85) : rnd(0.55, 1.1);
         spawnRocket();
-        if (Math.random() < (party ? 0.35 : 0.22)) spawnRocket();
+        if (Math.random() < (party ? 0.55 : 0.4)) spawnRocket();   // 多发齐射
       }
       blTimer -= dt;
-      if (blTimer <= 0) { blTimer = party ? rnd(0.45, 0.9) : rnd(0.9, 1.6); spawnBlessing(); }
+      if (blTimer <= 0) { blTimer = party ? rnd(0.3, 0.6) : rnd(0.55, 1.0); spawnBlessing(); }
       for (const r of fw) {
         r.x += r.vx * dt; r.y += r.vy * dt; r.vy += 130 * dt;
         if (Math.random() < 0.5)   // 火箭尾焰小火花
@@ -799,10 +802,12 @@ function ensureAudio(){
         p.x += p.vx * dt; p.y += p.vy * dt;
       }
       fparts = fparts.filter(p => p.age < p.life);
+      if (fparts.length > 1000) fparts.splice(0, fparts.length - 1000);   // 移动端性能保护
       for (const f of flashes) f.age += dt;
       flashes = flashes.filter(f => f.age < f.life);
       for (const b of blessings) { b.age += dt; b.y -= b.vy * dt; }
       blessings = blessings.filter(b => b.age < b.life && b.y > -50);
+      if (blessings.length > 80) blessings.splice(0, blessings.length - 80);   // 移动端性能保护
       // 点击星光
       for (const s of sparkles) { s.age += dt; s.vy += 220 * dt; s.vx *= Math.max(0, 1 - 2 * dt); s.x += s.vx * dt; s.y += s.vy * dt; }
       sparkles = sparkles.filter(s => s.age < s.life);
