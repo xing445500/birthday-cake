@@ -294,7 +294,7 @@
     let gustAmp = 0;                      // 当前阵风强度 0~1
     const gust = { t: 0, dur: 0, dir: 1, next: 2.5 };
     let fw = [], fparts = [], flashes = [], blessings = [];   // 烟花火箭/爆炸星屑/爆炸闪光/飘零祝福
-    let fwTimer = 0, blTimer = 0;
+    let fwTimer = 0.6, blTimer = 1.4;   // 加载后很快便有烟花升起, 祝福稍后飘来
 
     /* ================= 布局 ================= */
     function layout() {
@@ -544,9 +544,9 @@ function ensureAudio(){
     let musicStarted = false, songEnd = 0;
     function scheduleSong() {
       const beat = 0.5;
-      const t0 = Math.max(AC.currentTime + 0.15, songEnd + 0.5);
+      const t0 = Math.max(AC.currentTime + 0.15, songEnd + 0.5); // 0.15秒后播放, 避免与用户交互冲突
       let dur = 0;
-      for (const [n, b] of SONG) { tone(NOTE[n], t0 + dur, b * beat * 0.92, 0.30); dur += b * beat; }
+      for (const [n, b] of SONG) { tone(NOTE[n], t0 + dur, b * beat * 0.92, 0.30); dur += b * beat; }// 播放《生日快乐》
       songEnd = t0 + dur;
     }
     function startMusic() {          // 浏览器要求首次用户交互后才能出声
@@ -559,17 +559,17 @@ function ensureAudio(){
       const dur = 0.9;
       const buf = AC.createBuffer(1, AC.sampleRate * dur, AC.sampleRate);
       const d = buf.getChannelData(0);
-      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2);// 随机音量, 随时间衰减，模拟爆炸声音
       const src = AC.createBufferSource(); src.buffer = buf;
       const f = AC.createBiquadFilter(); f.type = 'lowpass';
       f.frequency.setValueAtTime(400, AC.currentTime);
       f.frequency.exponentialRampToValueAtTime(60, AC.currentTime + dur);
       const g = AC.createGain();
-      g.gain.setValueAtTime(0.75, AC.currentTime);
+      g.gain.setValueAtTime(state === 'celebrating' ? 0.75 : 0.38, AC.currentTime);   // 燃烛期间烟花声轻柔, 庆祝时全量
       g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + dur);
       src.connect(f); f.connect(g); g.connect(sfxGain); src.start();
     }
-    function playWhoosh() {   // 吹气声
+    function playWhoosh() {   // 吹气声，模拟蜡烛熄灭时的风声
       if (!AC) return;
       const dur = 0.7;
       const buf = AC.createBuffer(1, AC.sampleRate * dur, AC.sampleRate);
@@ -698,13 +698,13 @@ function ensureAudio(){
     }
     relightBtn.addEventListener('click', () => {
       state = 'lit'; celebrated = false; outT = 0;
-      fw = []; fparts = []; flashes = []; blessings = [];   // 清空上一轮庆祝残留
-      if (AC && musicGain) musicGain.gain.setTargetAtTime(1, AC.currentTime, 0.1);   // 音乐恢复音量
+      fw = []; fparts = []; flashes = []; blessings = [];   // 清空上一轮庆祝残留，准备重新开始
+      if (AC && musicGain) musicGain.gain.setTargetAtTime(1, AC.currentTime, 0.1);   // 音乐恢复音量，准备重新播放生日歌，避免与用户交互冲突
       msg.classList.remove('show');
       relightBtn.style.display = 'none';
       hint.style.animation = '';
       hint.style.opacity = '';
-      sparkleBurst(L.cx, L.flameY - 10);
+      sparkleBurst(L.cx, L.flameY - 10);// 烟花
     });
     muteBtn.addEventListener('click', () => {
       muted = !muted;
@@ -771,17 +771,16 @@ function ensureAudio(){
         p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
       }
       confetti = confetti.filter(p => p.age < p.life && p.y < H + 40);
-      // 漫天烟花 & 飘零祝福 (吹灭蜡烛后的庆祝)
-      if (state === 'celebrating') {
-        fwTimer -= dt;
-        if (fwTimer <= 0) {
-          fwTimer = rnd(0.5, 1.3);
-          spawnRocket();
-          if (Math.random() < 0.35) spawnRocket();
-        }
-        blTimer -= dt;
-        if (blTimer <= 0) { blTimer = rnd(0.45, 0.9); spawnBlessing(); }
+      // 漫天烟花 & 飘零祝福: 页面加载即上演, 吹灭蜡烛后更密集
+      const party = state === 'celebrating';
+      fwTimer -= dt;
+      if (fwTimer <= 0) {
+        fwTimer = party ? rnd(0.5, 1.3) : rnd(0.9, 1.8);
+        spawnRocket();
+        if (Math.random() < (party ? 0.35 : 0.22)) spawnRocket();
       }
+      blTimer -= dt;
+      if (blTimer <= 0) { blTimer = party ? rnd(0.45, 0.9) : rnd(0.9, 1.6); spawnBlessing(); }
       for (const r of fw) {
         r.x += r.vx * dt; r.y += r.vy * dt; r.vy += 130 * dt;
         if (Math.random() < 0.5)   // 火箭尾焰小火花
@@ -910,6 +909,54 @@ function ensureAudio(){
       ctx.fillRect(L.cx - L.rw, L.topY - L.topRy, L.rw * 2, L.topRy * 2);
       ctx.restore();
     }
+    /* 蛋糕侧身若隐若现的金色渐变字: 贴柱面弧度, 边缘压暗收窄, 缓慢呼吸 */
+    function drawCakeText(t) {
+      const { cx, topY, baseY, rw, baseRy } = L;
+      ctx.save();
+      // 裁剪到蛋糕侧身轮廓
+      ctx.beginPath();
+      ctx.moveTo(cx + rw, topY);
+      ctx.lineTo(cx + rw, baseY);
+      ctx.ellipse(cx, baseY, rw, baseRy, 0, 0, Math.PI, false);
+      ctx.lineTo(cx - rw, topY);
+      ctx.closePath();
+      ctx.clip();
+
+      const txt = '安巍生日快乐';
+      const fs = rw * 0.32;
+      const y = topY + L.cakeH * 0.56;
+      ctx.font = `700 ${fs}px "PingFang SC","Microsoft YaHei",sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const step = fs * 1.02;
+      for (let i = 0; i < txt.length; i++) {
+        const x = cx + (i - (txt.length - 1) / 2) * step;
+        const u = Math.min(1, Math.abs((x - cx) / rw));
+        const surf = Math.sqrt(Math.max(0, 1 - u * u));   // 柱面光照: 中亮边暗
+        const pulse = 0.5 + 0.5 * Math.sin(t * 0.62 - i * 0.55);   // 逐字相位波浪
+        const a = (0.20 + 0.45 * pulse) * (0.3 + 0.7 * surf);
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(0.6 + 0.4 * surf, 1);                  // 边缘横向收窄, 像绕在圆柱上
+        const g = ctx.createLinearGradient(0, -fs * 0.6, 0, fs * 0.6);
+        g.addColorStop(0, `rgba(255,236,200,${a})`);
+        g.addColorStop(0.55, `rgba(255,209,102,${a})`);
+        g.addColorStop(1, `rgba(226,165,74,${a * 0.85})`);
+        ctx.fillStyle = g;
+        ctx.shadowColor = `rgba(255,209,102,${0.55 * a})`;
+        ctx.shadowBlur = 5 + 9 * pulse;
+        ctx.fillText(txt[i], 0, 0);
+        ctx.restore();
+      }
+      // 表面光影压暗 (两侧+底部): 让字像"印"在蛋糕体上而非浮着
+      let g = ctx.createLinearGradient(cx - rw, 0, cx + rw, 0);
+      g.addColorStop(0, 'rgba(2,4,14,0.55)'); g.addColorStop(0.22, 'rgba(2,4,14,0)');
+      g.addColorStop(0.78, 'rgba(2,4,14,0)'); g.addColorStop(1, 'rgba(2,4,14,0.55)');
+      ctx.fillStyle = g; ctx.fillRect(cx - rw, topY, rw * 2, L.cakeH + baseRy);
+      g = ctx.createLinearGradient(0, topY, 0, baseY + baseRy);
+      g.addColorStop(0, 'rgba(2,4,14,0)'); g.addColorStop(1, 'rgba(2,4,14,0.5)');
+      ctx.fillStyle = g; ctx.fillRect(cx - rw, topY, rw * 2, L.cakeH + baseRy);
+      ctx.restore();
+    }
     function drawFlame(t) {
       const F = flameCalc(t);
       if (!F) return;
@@ -1019,6 +1066,7 @@ function ensureAudio(){
       // 蛋糕 + 烛光 + 火焰
       ctx.save(); ctx.translate(px * 10, py * 7);
       ctx.drawImage(cakeCv, 0, 0, W, H);
+      drawCakeText(t);
       drawWarmLight(t);
       drawFlame(t);
       for (const s of sparks) {
