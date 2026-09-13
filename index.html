@@ -197,6 +197,139 @@
     #relight:hover {
       transform: translate(-50%, -2px)
     }
+
+    /* ═══ 配置面板 ═══ */
+    #cfgBtn {
+      position: fixed;
+      right: 18px;
+      bottom: calc(18px + env(safe-area-inset-bottom));
+      z-index: 10;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      padding: 0;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: .35s;
+    }
+    #cfgBtn:hover { transform: rotate(90deg); }
+    #cfgBtn.open { transform: rotate(135deg); }
+
+    #cfgPanel {
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 360px;
+      max-width: 88vw;
+      height: 100%;
+      z-index: 11;
+      background: rgba(8, 12, 28, .92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-left: 1px solid rgba(255, 209, 102, .2);
+      transform: translateX(100%);
+      transition: transform .4s cubic-bezier(.22, 1, .36, 1);
+      overflow-y: auto;
+      padding: 20px 22px 40px;
+      color: #e8eefc;
+      font: 14px/1.5 "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    #cfgPanel.show { transform: translateX(0); }
+    #cfgPanel h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #ffd166;
+      margin: 22px 0 10px;
+      letter-spacing: .08em;
+      border-bottom: 1px solid rgba(255,209,102,.15);
+      padding-bottom: 6px;
+    }
+    #cfgPanel h3:first-child { margin-top: 6px; }
+    #cfgPanel label {
+      display: block;
+      margin: 10px 0 4px;
+      color: #9fb0d8;
+      font-size: 13px;
+    }
+    #cfgPanel input[type="text"],
+    #cfgPanel input[type="number"],
+    #cfgPanel input[type="date"],
+    #cfgPanel textarea {
+      width: 100%;
+      background: rgba(18, 26, 58, .55);
+      border: 1px solid rgba(255, 209, 102, .2);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #e8eefc;
+      font: 14px inherit;
+      font-family: inherit;
+      outline: none;
+      transition: .25s;
+    }
+    #cfgPanel textarea {
+      min-height: 70px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+    #cfgPanel input:focus,
+    #cfgPanel textarea:focus {
+      border-color: rgba(255, 209, 102, .55);
+      box-shadow: 0 0 12px rgba(255, 209, 102, .15);
+    }
+    #cfgPanel .row { display: flex; gap: 10px; }
+    #cfgPanel .row > div { flex: 1; }
+    #cfgPanel .hint-sm {
+      font-size: 12px;
+      color: #5d6a8a;
+      margin-top: 4px;
+      line-height: 1.5;
+    }
+    #cfgPanel .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    #cfgPanel .actions button {
+      position: static;
+      flex: 1;
+      border-radius: 8px;
+      padding: 10px 0;
+      font-size: 14px;
+      letter-spacing: .1em;
+    }
+    #cfgPanel .actions button.danger {
+      border-color: rgba(255, 107, 107, .4);
+      color: #ff9999;
+    }
+    #cfgPanel .photo-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    #cfgPanel .photo-item {
+      position: relative;
+      width: 72px;
+      height: 72px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(255,209,102,.15);
+    }
+    #cfgPanel .photo-item img {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    #cfgPanel .photo-item .del {
+      position: absolute; top: 2px; right: 2px;
+      width: 18px; height: 18px;
+      background: rgba(0,0,0,.6);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; color: #ff9999;
+      cursor: pointer;
+    }
   </style>
 </head>
 
@@ -218,6 +351,55 @@
 
   <button id="mute" title="音乐开关">🔊</button>
   <button id="relight">✨ 再点亮一次</button>
+
+  <!-- 配置面板 -->
+  <button id="cfgBtn" title="蛋糕配置">⚙</button>
+  <div id="cfgPanel">
+    <h3>🎂 蛋糕配置</h3>
+
+    <label>寿星姓名</label>
+    <input type="text" id="cfgName" placeholder="如：安巍" />
+
+    <label>祝福称呼（吹灭后弹窗显示）</label>
+    <input type="text" id="cfgToName" placeholder="如：我的好兄弟 安巍" />
+
+    <div class="row">
+      <div>
+        <label>性别</label>
+        <input type="text" id="cfgGender" placeholder="兄弟/闺蜜/宝贝" />
+      </div>
+      <div>
+        <label>蜡烛数量</label>
+        <input type="number" id="cfgCandles" min="1" max="12" value="1" />
+      </div>
+    </div>
+
+    <label>生日日期</label>
+    <div class="row">
+      <div><input type="date" id="cfgBirthday" /></div>
+    </div>
+
+    <label>蛋糕侧面刻字</label>
+    <input type="text" id="cfgEngrave" placeholder="如：安巍生日快乐" />
+    <div class="hint-sm">印在蛋糕圆柱侧面的金色渐变文字</div>
+
+    <label>祝福语（用逗号/空格/换行分隔，系统自动拆分）</label>
+    <textarea id="cfgBlessings" placeholder="生日快乐, 前程似锦, 万事胜意, MC小安, 得偿所愿"></textarea>
+    <div class="hint-sm">每条祝福会在烟花中飘零升起，支持任意数量</div>
+
+    <label>祝福副标题（吹灭后弹窗第二行）</label>
+    <input type="text" id="cfgSubtitle" placeholder="如：愿你眼里有星河 · 心中有宇宙" />
+
+    <h3>📸 飘零照片（选填）</h3>
+    <div class="hint-sm">上传照片后，吹灭蜡烛时会以 3D 旋转方式飘落</div>
+    <input type="file" id="cfgPhotoInput" accept="image/*" multiple style="margin-top:8px" />
+    <div class="photo-grid" id="cfgPhotoGrid"></div>
+
+    <div class="actions">
+      <button id="cfgSave">💾 保存</button>
+      <button id="cfgReset" class="danger">↺ 重置默认</button>
+    </div>
+  </div>
 
   <script>
     'use strict';
@@ -295,6 +477,8 @@
     const gust = { t: 0, dur: 0, dir: 1, next: 2.5 };
     let fw = [], fparts = [], flashes = [], blessings = [];   // 烟花火箭/爆炸星屑/爆炸闪光/飘零祝福
     let fwTimer = 0.6, blTimer = 1.4;   // 加载后很快便有烟花升起, 祝福稍后飘来
+    let photoFall = [];   // 飘零的 3D 照片
+    const photoImgs = {};  // base64 → Image 缓存
 
     /* ================= 布局 ================= */
     function layout() {
@@ -443,18 +627,19 @@
       c.strokeStyle = 'rgba(255,255,255,0.55)'; c.lineWidth = 2;
       c.beginPath(); c.ellipse(cx, topY, rw, topRy, 0, 0, TAU); c.stroke();
 
-      /* ---- 蜡烛 (薰衣草紫) ---- */
-      const cbw = L.candleW, cbt = L.candleTop, cbb = L.candleBase;
-      g = c.createLinearGradient(cx - cbw, 0, cx + cbw, 0);
-      g.addColorStop(0, '#b39ddb'); g.addColorStop(0.4, '#e8d9f8'); g.addColorStop(1, '#9575cd');
-      c.fillStyle = g;
-      roundRect(c, cx - cbw / 2, cbt, cbw, cbb - cbt, cbw * 0.3); c.fill();
-      // 蜡油滴
-      blob(c, cx - cbw * 0.5, cbt + cbw * 1.2, cbw * 0.5, '#f3e8fb', 0.9);
-      blob(c, cx + cbw * 0.45, cbt + cbw * 2.1, cbw * 0.45, '#f3e8fb', 0.85);
-      // 烛芯
-      c.strokeStyle = '#3a2b2b'; c.lineWidth = 2; c.lineCap = 'round';
-      c.beginPath(); c.moveTo(cx, cbt + 2); c.quadraticCurveTo(cx + 1, cbt - 4, cx + 2, cbt - 7); c.stroke();
+      /* ---- 蜡烛 (薰衣草紫) — 按配置数量环形布局 ---- */
+      const cbw = L.candleW;
+      for (const cp of candlePositions) {
+        const ecx = cx + cp.dx, ebt = L.candleTop + cp.dy, ebb = L.candleBase + cp.dy;
+        g = c.createLinearGradient(ecx - cbw, 0, ecx + cbw, 0);
+        g.addColorStop(0, '#b39ddb'); g.addColorStop(0.4, '#e8d9f8'); g.addColorStop(1, '#9575cd');
+        c.fillStyle = g;
+        roundRect(c, ecx - cbw / 2, ebt, cbw, ebb - ebt, cbw * 0.3); c.fill();
+        blob(c, ecx - cbw * 0.5, ebt + cbw * 1.2, cbw * 0.5, '#f3e8fb', 0.9);
+        blob(c, ecx + cbw * 0.45, ebt + cbw * 2.1, cbw * 0.45, '#f3e8fb', 0.85);
+        c.strokeStyle = '#3a2b2b'; c.lineWidth = 2; c.lineCap = 'round';
+        c.beginPath(); c.moveTo(ecx, ebt + 2); c.quadraticCurveTo(ecx + 1, ebt - 4, ecx + 2, ebt - 7); c.stroke();
+      }
     }
 
     /* ================= 动态元素初始化 ================= */
@@ -676,7 +861,12 @@ function ensureAudio(){
       }
     }
     function inCandle(x, y) {
-      return Math.abs(x - L.cx) < L.s * 0.13 && y > L.flameY - L.s * 0.15 && y < L.topY + L.s * 0.03;
+      for (const cp of candlePositions) {
+        const cx = L.cx + cp.dx, fy = L.flameY + cp.dy;
+        if (Math.abs(x - cx) < L.s * 0.13 && y > fy - L.s * 0.15 && y < L.topY + L.s * 0.03)
+          return true;
+      }
+      return false;
     }
 
     /* ================= 交互 ================= */
@@ -694,14 +884,30 @@ function ensureAudio(){
     }
     function celebrate() {
       spawnConfetti();
+      spawnPhotos();
       for (let i = 0; i < 6; i++) spawnBlessing(rnd(W * 0.1, W * 0.9), rnd(H * 0.35, H * 0.9));
       fwTimer = 0.15;   // 礼花未落, 烟花先起
       msg.classList.add('show');
       relightBtn.style.display = 'block';
     }
+    function spawnPhotos() {
+      const photos = (cfg.photos || []).filter(Boolean);
+      if (!photos.length) return;
+      for (let i = 0; i < photos.length; i++) {
+        photoFall.push({
+          src: photos[i],
+          x: rnd(W * 0.15, W * 0.85), y: -60 - rnd(0, 200),
+          vy: rnd(30, 60), vx: rnd(-15, 15),
+          rot: rnd(-0.3, 0.3), vr: rnd(-1.2, 1.2),
+          tilt: rnd(-0.5, 0.5), tiltV: rnd(-0.8, 0.8),
+          w: rnd(80, 140), age: 0, life: rnd(6, 10),
+          delay: i * rnd(0.3, 0.8)
+        });
+      }
+    }
     relightBtn.addEventListener('click', () => {
       state = 'lit'; celebrated = false; outT = 0;
-      fw = []; fparts = []; flashes = []; blessings = [];   // 清空上一轮庆祝残留，准备重新开始
+      fw = []; fparts = []; flashes = []; blessings = []; photoFall = [];   // 清空上一轮庆祝残留，准备重新开始
       if (AC && musicGain) musicGain.gain.setTargetAtTime(1, AC.currentTime, 0.1);   // 音乐恢复音量，准备重新播放生日歌，避免与用户交互冲突
       msg.classList.remove('show');
       relightBtn.style.display = 'none';
@@ -808,6 +1014,13 @@ function ensureAudio(){
       for (const b of blessings) { b.age += dt; b.y -= b.vy * dt; }
       blessings = blessings.filter(b => b.age < b.life && b.y > -50);
       if (blessings.length > 80) blessings.splice(0, blessings.length - 80);   // 移动端性能保护
+      // 飘零 3D 照片
+      for (const p of photoFall) {
+        if (p.delay > 0) { p.delay -= dt; continue; }
+        p.age += dt; p.x += p.vx * dt; p.y += p.vy * dt;
+        p.rot += p.vr * dt; p.tilt += p.tiltV * dt;
+      }
+      photoFall = photoFall.filter(p => p.age < p.life && p.y < H + 100);
       // 点击星光
       for (const s of sparkles) { s.age += dt; s.vy += 220 * dt; s.vx *= Math.max(0, 1 - 2 * dt); s.x += s.vx * dt; s.y += s.vy * dt; }
       sparkles = sparkles.filter(s => s.age < s.life);
@@ -907,11 +1120,14 @@ function ensureAudio(){
       const a = 0.22 * F.intensity * (0.9 + 0.1 * nzC(t * 2.7));
       ctx.save();
       ctx.beginPath(); ctx.ellipse(L.cx, L.topY, L.rw * 0.95, L.topRy * 0.9, 0, 0, TAU); ctx.clip();
-      const g = ctx.createRadialGradient(L.cx, L.flameY, 0, L.cx, L.flameY, L.s * 0.30);
-      g.addColorStop(0, `rgba(255,190,110,${a})`);
-      g.addColorStop(1, 'rgba(255,190,110,0)');
-      ctx.fillStyle = g;
-      ctx.fillRect(L.cx - L.rw, L.topY - L.topRy, L.rw * 2, L.topRy * 2);
+      for (const cp of candlePositions) {
+        const fx = L.cx + cp.dx, fy = L.flameY + cp.dy;
+        const g = ctx.createRadialGradient(fx, fy, 0, fx, fy, L.s * 0.30);
+        g.addColorStop(0, `rgba(255,190,110,${a})`);
+        g.addColorStop(1, 'rgba(255,190,110,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(L.cx - L.rw, L.topY - L.topRy, L.rw * 2, L.topRy * 2);
+      }
       ctx.restore();
     }
     /* 蛋糕侧身若隐若现的金色渐变字: 贴柱面弧度, 边缘压暗收窄, 缓慢呼吸 */
@@ -927,7 +1143,7 @@ function ensureAudio(){
       ctx.closePath();
       ctx.clip();
 
-      const txt = '安巍生日快乐';
+      const txt = engraveText;
       const fs = rw * 0.32;
       const y = topY + L.cakeH * 0.56;
       ctx.font = `700 ${fs}px "PingFang SC","Microsoft YaHei",sans-serif`;
@@ -978,59 +1194,65 @@ function ensureAudio(){
         ctx.closePath();
       };
       ctx.save();
-      ctx.translate(L.cx, L.flameY);
-      ctx.rotate(sway * 0.012);
       ctx.globalCompositeOperation = 'lighter';   // 加性发光: 光与光叠加更真实
 
-      // 大光晕 (双层衰减)
-      const gr = L.s * 0.32 * (1 + 0.05 * nzC(t * 2.3)) * sc;
-      const gg = ctx.createRadialGradient(0, -fh * 0.45, 0, 0, -fh * 0.45, gr);
-      gg.addColorStop(0, `rgba(255,180,90,${0.22 * intensity})`);
-      gg.addColorStop(0.4, `rgba(255,150,60,${0.10 * intensity})`);
-      gg.addColorStop(1, 'rgba(255,150,60,0)');
-      ctx.fillStyle = gg;
-      ctx.beginPath(); ctx.arc(0, -fh * 0.45, gr, 0, TAU); ctx.fill();
+      for (const cp of candlePositions) {
+        ctx.save();
+        ctx.translate(L.cx + cp.dx, L.flameY + cp.dy);
+        ctx.rotate(sway * 0.012);
 
-      // 外焰: 垂直渐变 (根部亮橙 → 顶梢消散), 真实火焰顶梢从不是硬边
-      let g = ctx.createLinearGradient(0, 0, 0, -fh);
-      g.addColorStop(0, `rgba(255,170,60,${0.95 * sc})`);
-      g.addColorStop(0.45, `rgba(255,130,25,${0.85 * sc})`);
-      g.addColorStop(0.8, `rgba(255,90,15,${0.45 * sc})`);
-      g.addColorStop(1, 'rgba(255,80,10,0)');
-      flamePath(fw, fh, sway);
-      ctx.fillStyle = g; ctx.fill();
+        // 大光晕 (双层衰减)
+        const gr = L.s * 0.32 * (1 + 0.05 * nzC(t * 2.3)) * sc;
+        const gg = ctx.createRadialGradient(0, -fh * 0.45, 0, 0, -fh * 0.45, gr);
+        gg.addColorStop(0, `rgba(255,180,90,${0.22 * intensity})`);
+        gg.addColorStop(0.4, `rgba(255,150,60,${0.10 * intensity})`);
+        gg.addColorStop(1, 'rgba(255,150,60,0)');
+        ctx.fillStyle = gg;
+        ctx.beginPath(); ctx.arc(0, -fh * 0.45, gr, 0, TAU); ctx.fill();
 
-      // 内焰
-      g = ctx.createLinearGradient(0, 0, 0, -fh * 0.74);
-      g.addColorStop(0, `rgba(255,235,150,${0.95 * sc})`);
-      g.addColorStop(0.6, `rgba(255,205,90,${0.85 * sc})`);
-      g.addColorStop(1, 'rgba(255,180,60,0)');
-      flamePath(fw * 0.62, fh * 0.74, sway * 0.7);
-      ctx.fillStyle = g; ctx.fill();
+        // 外焰
+        let g = ctx.createLinearGradient(0, 0, 0, -fh);
+        g.addColorStop(0, `rgba(255,170,60,${0.95 * sc})`);
+        g.addColorStop(0.45, `rgba(255,130,25,${0.85 * sc})`);
+        g.addColorStop(0.8, `rgba(255,90,15,${0.45 * sc})`);
+        g.addColorStop(1, 'rgba(255,80,10,0)');
+        flamePath(fw, fh, sway);
+        ctx.fillStyle = g; ctx.fill();
 
-      // 焰心
-      g = ctx.createLinearGradient(0, 0, 0, -fh * 0.46);
-      g.addColorStop(0, `rgba(255,255,245,${0.95 * sc})`);
-      g.addColorStop(0.7, `rgba(255,250,220,${0.85 * sc})`);
-      g.addColorStop(1, 'rgba(255,240,190,0)');
-      flamePath(fw * 0.34, fh * 0.46, sway * 0.4);
-      ctx.fillStyle = g; ctx.fill();
+        // 内焰
+        g = ctx.createLinearGradient(0, 0, 0, -fh * 0.74);
+        g.addColorStop(0, `rgba(255,235,150,${0.95 * sc})`);
+        g.addColorStop(0.6, `rgba(255,205,90,${0.85 * sc})`);
+        g.addColorStop(1, 'rgba(255,180,60,0)');
+        flamePath(fw * 0.62, fh * 0.74, sway * 0.7);
+        ctx.fillStyle = g; ctx.fill();
 
-      // 焰心根部蓝区 (蜡芯附近的不完全燃烧带)
-      ctx.fillStyle = `rgba(90,140,255,${0.45 * sc})`;
-      ctx.beginPath(); ctx.ellipse(0, -fw * 0.18, fw * 0.30, fw * 0.22, 0, 0, TAU); ctx.fill();
+        // 焰心
+        g = ctx.createLinearGradient(0, 0, 0, -fh * 0.46);
+        g.addColorStop(0, `rgba(255,255,245,${0.95 * sc})`);
+        g.addColorStop(0.7, `rgba(255,250,220,${0.85 * sc})`);
+        g.addColorStop(1, 'rgba(255,240,190,0)');
+        flamePath(fw * 0.34, fh * 0.46, sway * 0.4);
+        ctx.fillStyle = g; ctx.fill();
 
-      // 偶尔向上窜出的小火舌
-      if (state === 'lit' && nzE(t * 1.3) > 0.55) {
-        const tk = Math.min(1, (nzE(t * 1.3) - 0.55) / 0.45);
-        ctx.fillStyle = `rgba(255,190,80,${0.28 * tk * sc})`;
-        flamePath(fw * 0.3, fh * (0.9 + 0.35 * tk), sway * 1.4);
-        ctx.fill();
+        // 焰心根部蓝区
+        ctx.fillStyle = `rgba(90,140,255,${0.45 * sc})`;
+        ctx.beginPath(); ctx.ellipse(0, -fw * 0.18, fw * 0.30, fw * 0.22, 0, 0, TAU); ctx.fill();
+
+        // 偶尔向上窜出的小火舌
+        if (state === 'lit' && nzE(t * 1.3) > 0.55) {
+          const tk = Math.min(1, (nzE(t * 1.3) - 0.55) / 0.45);
+          ctx.fillStyle = `rgba(255,190,80,${0.28 * tk * sc})`;
+          flamePath(fw * 0.3, fh * (0.9 + 0.35 * tk), sway * 1.4);
+          ctx.fill();
+        }
+
+        // 烛芯亮点
+        ctx.fillStyle = `rgba(255,220,150,${0.8 * sc})`;
+        ctx.beginPath(); ctx.arc(0, 0, 1.6, 0, TAU); ctx.fill();
+
+        ctx.restore();
       }
-
-      // 烛芯亮点
-      ctx.fillStyle = `rgba(255,220,150,${0.8 * sc})`;
-      ctx.beginPath(); ctx.arc(0, 0, 1.6, 0, TAU); ctx.fill();
 
       ctx.restore();
     }
@@ -1116,6 +1338,32 @@ function ensureAudio(){
       }
       ctx.globalAlpha = 1;
 
+      // 飘零 3D 照片 (旋转飘落, 带金边光晕)
+      for (const p of photoFall) {
+        if (p.delay > 0) continue;
+        const fi = Math.min(1, p.age / 0.8) * Math.min(1, (p.life - p.age) / 1.5);
+        if (fi <= 0) continue;
+        const img = photoImgs[p.src];
+        if (!img || !img.width) continue;
+        const ih = Math.round(p.w * img.height / img.width);
+        ctx.save();
+        ctx.globalAlpha = fi;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.transform(1, 0, 0, Math.cos(p.tilt), 0, 0);  // Y 轴透视翻转 (3D 效果)
+        // 金边
+        ctx.shadowColor = 'rgba(255,209,102,0.4)';
+        ctx.shadowBlur = 20;
+        ctx.fillStyle = 'rgba(255,209,102,0.8)';
+        const pad = 3;
+        roundRect(ctx, -p.w/2 - pad, -ih/2 - pad, p.w + pad*2, ih + pad*2, 8);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.drawImage(img, -p.w/2, -ih/2, p.w, ih);
+        ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+
       // 烟花: 上升火箭 (拖尾光条)
       for (const r of fw) {
         const g = ctx.createLinearGradient(r.x, r.y, r.x - r.vx * 0.05, r.y - r.vy * 0.05);
@@ -1184,6 +1432,7 @@ function ensureAudio(){
       cakeCv.getContext('2d').setTransform(DPR, 0, 0, DPR, 0, 0);
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       layout(); renderBG(); renderCake();
+      recalcCandles(cfg.candles);
       initStars(); initFloaters(); initOrbits();
     }
     let rzT;
@@ -1192,6 +1441,188 @@ function ensureAudio(){
     /* 定制称呼: index.html?to=名字 */
     const to = new URLSearchParams(location.search).get('to');
     if (to) document.getElementById('toName').textContent = 'To ' + to;
+
+    /* ================= 蛋糕配置系统 ================= */
+    const DEFAULT_CFG = {
+      name: '',           // 寿星姓名
+      toName: 'To 我的好兄弟 安巍',
+      gender: '兄弟',
+      birthday: '',      // YYYY-MM-DD
+      candles: 1,         // 蜡烛数量
+      engrave: '安巍生日快乐',
+      blessings: '生日快乐, 平安喜乐, 前程似锦, 万事胜意, 得偿所愿, 健康快乐, 友谊长存, 未来可期, 好运连连, 笑口常开, 岁岁常欢愉, 年年皆胜意, MC小安, MC安子, MC安巍, 所求皆如愿, 所行化坦途, 日日是好日, 被世界温柔以待, 眼里有光 心里有海, 好运正在派送, 星辰大海为你闪耀, 又长大一岁啦, 生日快乐万事胜意, 愿你一生努力一生被爱',
+      subtitle: '愿你眼里有星河 · 心中有宇宙',
+      photos: []          // base64 图片数组
+    };
+
+    let cfg = loadCfg();
+
+    function loadCfg() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('cakeCfg') || '{}');
+        return Object.assign({}, DEFAULT_CFG, saved);
+      } catch (e) { return Object.assign({}, DEFAULT_CFG); }
+    }
+
+    function saveCfg(c) {
+      localStorage.setItem('cakeCfg', JSON.stringify(c));
+      cfg = c;
+      applyCfg();
+    }
+
+    function parseBlessings(str) {
+      if (!str || !str.trim()) return ['生日快乐'];
+      return str.split(/[,，\n\r、;；\s]+/).map(s => s.trim()).filter(Boolean);
+    }
+
+    /* 蜡烛位置数组 (多蜡烛布局) */
+    let candlePositions = [];
+    function recalcCandles(n) {
+      candlePositions = [];
+      n = Math.max(1, Math.min(12, n || 1));
+      if (n === 1) {
+        candlePositions.push({ dx: 0, dy: 0 });
+      } else {
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * TAU - Math.PI / 2;
+          const r = L.rw * (n <= 4 ? 0.35 : 0.5);
+          candlePositions.push({ dx: Math.cos(a) * r, dy: Math.sin(a) * r * (L.topRy / L.rw) });
+        }
+      }
+    }
+
+    /* 应用配置到画面 */
+    function applyCfg() {
+      // 弹窗文字
+      document.getElementById('toName').textContent = cfg.toName || DEFAULT_CFG.toName;
+      document.querySelector('.msg .m3').textContent = cfg.subtitle || DEFAULT_CFG.subtitle;
+
+      // 祝福语列表
+      BLESSINGS.length = 0;
+      BLESSINGS.push(...parseBlessings(cfg.blessings));
+
+      // 蛋糕刻字
+      engraveText = cfg.engrave || DEFAULT_CFG.engrave;
+
+      // 蜡烛数量 → 重新计算位置
+      recalcCandles(cfg.candles);
+    }
+
+    let engraveText = DEFAULT_CFG.engrave;
+
+    /* ---- 配置面板交互 ---- */
+    const cfgBtn = document.getElementById('cfgBtn');
+    const cfgPanel = document.getElementById('cfgPanel');
+    cfgBtn.addEventListener('click', () => {
+      const open = cfgPanel.classList.toggle('show');
+      cfgBtn.classList.toggle('open', open);
+      cfgBtn.textContent = open ? '✕' : '⚙';
+      if (open) fillCfgForm();
+    });
+
+    function fillCfgForm() {
+      document.getElementById('cfgName').value = cfg.name || '';
+      document.getElementById('cfgToName').value = cfg.toName || '';
+      document.getElementById('cfgGender').value = cfg.gender || '';
+      document.getElementById('cfgBirthday').value = cfg.birthday || '';
+      document.getElementById('cfgCandles').value = cfg.candles || 1;
+      document.getElementById('cfgEngrave').value = cfg.engrave || '';
+      document.getElementById('cfgBlessings').value = cfg.blessings || '';
+      document.getElementById('cfgSubtitle').value = cfg.subtitle || '';
+      renderPhotoGrid();
+    }
+
+    document.getElementById('cfgSave').addEventListener('click', () => {
+      const newCfg = {
+        name: document.getElementById('cfgName').value.trim(),
+        toName: document.getElementById('cfgToName').value.trim() || DEFAULT_CFG.toName,
+        gender: document.getElementById('cfgGender').value.trim() || '兄弟',
+        birthday: document.getElementById('cfgBirthday').value,
+        candles: Math.max(1, Math.min(12, parseInt(document.getElementById('cfgCandles').value) || 1)),
+        engrave: document.getElementById('cfgEngrave').value.trim() || DEFAULT_CFG.engrave,
+        blessings: document.getElementById('cfgBlessings').value.trim() || DEFAULT_CFG.blessings,
+        subtitle: document.getElementById('cfgSubtitle').value.trim() || DEFAULT_CFG.subtitle,
+        photos: cfg.photos || []
+      };
+      saveCfg(newCfg);
+      // 预加载新增照片
+      for (const src of (newCfg.photos || [])) {
+        if (!photoImgs[src]) {
+          const img = new Image();
+          img.src = src;
+          photoImgs[src] = img;
+        }
+      }
+      // 重新渲染蛋糕离屏画布（蜡烛数量变化需要重绘）
+      renderCake();
+      cfgPanel.classList.remove('show');
+      cfgBtn.classList.remove('open');
+      cfgBtn.textContent = '⚙';
+    });
+
+    document.getElementById('cfgReset').addEventListener('click', () => {
+      localStorage.removeItem('cakeCfg');
+      cfg = Object.assign({}, DEFAULT_CFG);
+      applyCfg();
+      renderCake();
+      fillCfgForm();
+    });
+
+    /* ---- 照片上传 ---- */
+    document.getElementById('cfgPhotoInput').addEventListener('change', e => {
+      const files = e.target.files;
+      if (!files.length) return;
+      const maxPhotos = 12;
+      for (const file of files) {
+        if (cfg.photos.length >= maxPhotos) break;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          // 压缩到 400px 宽以内
+          const img = new Image();
+          img.onload = () => {
+            const cw = 400;
+            const ch = Math.round(img.height * cw / img.width);
+            const tc = document.createElement('canvas');
+            tc.width = cw; tc.height = ch;
+            tc.getContext('2d').drawImage(img, 0, 0, cw, ch);
+            cfg.photos.push(tc.toDataURL('image/jpeg', 0.7));
+            if (cfg.photos.length <= maxPhotos) renderPhotoGrid();
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+      e.target.value = '';
+    });
+
+    function renderPhotoGrid() {
+      const grid = document.getElementById('cfgPhotoGrid');
+      grid.innerHTML = '';
+      (cfg.photos || []).forEach((src, i) => {
+        const div = document.createElement('div');
+        div.className = 'photo-item';
+        div.innerHTML = `<img src="${src}"><div class="del" data-i="${i}">✕</div>`;
+        div.querySelector('.del').addEventListener('click', () => {
+          cfg.photos.splice(i, 1);
+          renderPhotoGrid();
+        });
+        grid.appendChild(div);
+      });
+    }
+
+    /* 首次加载应用配置 */
+    recalcCandles(cfg.candles);
+    BLESSINGS.length = 0;
+    BLESSINGS.push(...parseBlessings(cfg.blessings));
+    engraveText = cfg.engrave || DEFAULT_CFG.engrave;
+    // 预加载照片 Image 对象
+    for (const src of (cfg.photos || [])) {
+      if (!photoImgs[src]) {
+        const img = new Image();
+        img.src = src;
+        photoImgs[src] = img;
+      }
+    }
 
     resize();
     requestAnimationFrame(ts => { last = ts; requestAnimationFrame(frame); });
