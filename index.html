@@ -392,6 +392,41 @@
       line-height: 1.5;
     }
 
+    /* 主题模板卡片网格 */
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .theme-card {
+      position: relative;
+      border: 1px solid rgba(255, 209, 102, .18);
+      border-radius: 10px;
+      padding: 9px 4px 7px;
+      background: linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+      color: #dfe6ff;
+      cursor: pointer;
+      text-align: center;
+      transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+    }
+    .theme-card:hover { transform: translateY(-2px); border-color: rgba(255, 209, 102, .55); }
+    .theme-card .tc-emoji { font-size: 22px; line-height: 1.2; display: block; }
+    .theme-card .tc-name { display: block; font-size: 11.5px; font-weight: 700; margin-top: 3px; letter-spacing: .04em; }
+    .theme-card .tc-tag { display: block; font-size: 9.5px; color: #8b97bd; margin-top: 1px; }
+    .theme-card.active {
+      border-color: #ffd166;
+      box-shadow: 0 0 0 1px rgba(255,209,102,.5), 0 4px 16px rgba(255,209,102,.18);
+      background: linear-gradient(160deg, rgba(255,209,102,.16), rgba(255,209,102,.04));
+    }
+    .theme-card.active .tc-tag { color: #ffd9a0; }
+    .theme-card.active::after {
+      content: '✓';
+      position: absolute; top: 3px; right: 5px;
+      font-size: 10px; color: #ffd166;
+    }
+    @media (max-width: 480px) { .theme-grid { grid-template-columns: repeat(3, 1fr); } }
+
     #cfgPanel .actions {
       display: flex;
       gap: 10px;
@@ -569,6 +604,10 @@
   <div id="cfgPanel">
     <h3>🎂 蛋糕配置</h3>
 
+    <label>🎨 蛋糕与场景模板（点击即可实时预览）</label>
+    <div id="themeGrid" class="theme-grid"></div>
+    <div class="hint-sm">16 款唯美预设：恋人告白、闺蜜姐妹、长辈祝福、兄弟哥们……按对象自由挑选，保存后生效</div>
+
     <label>寿星姓名</label>
     <input type="text" id="cfgName" placeholder="如：安巍" />
 
@@ -647,6 +686,156 @@
     const L = {};                                      // 蛋糕布局参数
 
     const PALETTE = ['#ffd166', '#ff9f43', '#ff6b9d', '#4ecdc4', '#74b9ff', '#f8f9fa', '#a29bfe', '#ffe8c2'];
+
+    /* ================= 场景模板 (16 款预设蛋糕 + 唯美景) =================
+       每套主题定义: 夜空渐变/散景光斑/蛋糕配色/糕体形制/顶部装饰/蜡烛色/刻字色/动态粒子 */
+    const THEMES = [
+      { id: 'starry',    name: '星河绮梦', emoji: '🌌', tag: '经典梦幻',
+        sky: ['#070a1c', '#04050d', '#02030a'], blobs: [['#1c2a6e', .13], ['#31255f', .12], ['#123a5e', .12], ['#3a1e5c', .11], ['#0e2a4a', .12], ['#3b57c4', .10]],
+        glow: ['#3b57c4', .10], vig: .55, stars: true, orbits: true, flo: 'dot',
+        palette: ['#ffd166', '#ff9f43', '#ff6b9d', '#4ecdc4', '#74b9ff', '#f8f9fa', '#a29bfe', '#ffe8c2'],
+        plate: ['#f4f7ff', '#c6d2e6', '#8fa2c4', '#eef3fd', '#b9c7e0', '25,35,70'],
+        shape: 'round', bodyFx: 'galaxy', body: ['#070b20', '#0e1740', '#1f2f7e', '#0e1740', '#070b20'],
+        topFx: 'galaxy', top: '#a9bdf0', drip: null, deco: 'none', band: null,
+        candle: ['#b39ddb', '#e8d9f8', '#9575cd'], engrave: 'gold' },
+
+      { id: 'pinkheart', name: '粉恋心语', emoji: '💗', tag: '致恋人',
+        sky: ['#32101f', '#200b14', '#0e0509'], blobs: [['#ff6b9a', .16], ['#ffd9e8', .07], ['#ffd166', .07], ['#b14a78', .13], ['#5b1e3e', .14]],
+        glow: ['#ff8fb8', .15], vig: .5, stars: false, orbits: false, flo: 'petal',
+        palette: ['#ff9ebb', '#ffc2d4', '#ffe1ec', '#ffd166', '#fff0f6', '#ff6b9d'],
+        plate: ['#ffe3ee', '#f3b9cf', '#cf8aa6', '#fff0f6', '#f7cadc', '90,30,60'],
+        shape: 'heart', bodyFx: 'smooth', body: ['#9c3a5e', '#d56e98', '#f4a9c6', '#d56e98', '#9c3a5e'],
+        topFx: 'hearts', top: '#ffeaf2', drip: '#fff4f8', deco: 'hearts', band: null,
+        candle: ['#d96a96', '#ffd9e8', '#b24572'], engrave: 'white' },
+
+      { id: 'redrose',   name: '炽热爱意', emoji: '🌹', tag: '致爱人',
+        sky: ['#1d0609', '#120305', '#080102'], blobs: [['#8c1c2a', .20], ['#c1121f', .10], ['#ffd166', .07], ['#5a0e16', .18], ['#e05060', .08]],
+        glow: ['#d62839', .13], vig: .55, stars: false, orbits: false, flo: 'petal',
+        palette: ['#ff5d73', '#c1121f', '#ffd166', '#ff8fa3', '#780000', '#ffe8c2'],
+        plate: ['#5a0e16', '#3a0810', '#20040a', '#6e1420', '#2c060c', '10,2,4'],
+        shape: 'heart', bodyFx: 'petals', body: ['#5e0a14', '#9d1220', '#d62839', '#9d1220', '#5e0a14'],
+        topFx: 'smooth', top: '#a31624', drip: null, deco: 'roseGiant', band: null,
+        candle: ['#8a0f1e', '#e05060', '#5a0812'], engrave: 'gold' },
+
+      { id: 'lovecream', name: '奶油情书', emoji: '💌', tag: '致恋人',
+        sky: ['#57404c', '#3c2b36', '#221720'], blobs: [['#f6d5dc', .12], ['#ffc2d4', .10], ['#ffe8c2', .08], ['#8a5a68', .12]],
+        glow: ['#f3c2cf', .12], vig: .42, stars: true, orbits: false, flo: 'petal',
+        palette: ['#ffc2d4', '#fff0f2', '#f6d5dc', '#ffd166', '#e8a5b8'],
+        plate: ['#fbf3f2', '#e6cdcd', '#c3a3a8', '#fff8f6', '#f0dede', '90,60,66'],
+        shape: 'heart', bodyFx: 'smooth', body: ['#c79aa2', '#f0d6d6', '#fff6f2', '#f0d6d6', '#c79aa2'],
+        topFx: 'roses', top: '#fff8f4', drip: null, deco: 'bow', band: null,
+        candle: ['#d8b9a6', '#fff3ea', '#b98f78'], engrave: 'rose' },
+
+      { id: 'swan',      name: '天鹅湖畔', emoji: '🦢', tag: '致优雅的她',
+        sky: ['#4a4034', '#332b24', '#1b1611'], blobs: [['#fff8ea', .10], ['#d4b896', .12], ['#f7ede2', .09], ['#6b5840', .12]],
+        glow: ['#ffeecf', .13], vig: .4, stars: true, orbits: false, flo: 'snow',
+        palette: ['#ffffff', '#f3e9dc', '#e8d5b7', '#d4b896', '#f7ede2', '#fff8ea'],
+        plate: ['#f7ede2', '#ddccb4', '#b39c7c', '#fbf5ea', '#e8dcc6', '70,56,38'],
+        shape: 'round', bodyFx: 'ruffle', body: ['#b3a186', '#e6dcc6', '#faf3e4', '#e6dcc6', '#b3a186'],
+        topFx: 'cream', top: '#fbf5ea', drip: null, deco: 'swan', band: null,
+        candle: ['#c9bfa8', '#ffffff', '#a89c80'], engrave: 'champ' },
+
+      { id: 'crown',     name: '加冕女王', emoji: '👑', tag: '致女神',
+        sky: ['#43203a', '#2e1430', '#160a18'], blobs: [['#ff9ebb', .14], ['#ffd166', .10], ['#c06aa0', .13], ['#ffe1ec', .07], ['#7a3a68', .12]],
+        glow: ['#f090be', .13], vig: .5, stars: false, orbits: false, flo: 'petal',
+        palette: ['#ffb8d4', '#ffd166', '#ffe1ec', '#f090be', '#fff0f6', '#e8c070'],
+        plate: ['#ffe3ee', '#eeb9cf', '#c488a8', '#fff0f6', '#f5cddd', '90,40,64'],
+        shape: 'round', bodyFx: 'smooth', body: ['#b05882', '#e88ab2', '#ffc6dc', '#e88ab2', '#b05882'],
+        topFx: 'cream', top: '#ffe3ef', drip: '#ffd0e2', deco: 'crown', band: ['#ff97bd', '#ffd9e8'],
+        candle: ['#d96a96', '#ffd9e8', '#a83f68'], engrave: 'gold' },
+
+      { id: 'tulip',     name: '郁见美好', emoji: '🌷', tag: '致闺蜜',
+        sky: ['#3c4a3e', '#29362e', '#141c16'], blobs: [['#ffb8d4', .12], ['#f3e9dc', .10], ['#9ccc9c', .12], ['#e8a5c4', .09], ['#d4b896', .08]],
+        glow: ['#e8f0d8', .12], vig: .42, stars: true, orbits: false, flo: 'petal',
+        palette: ['#ff9ebb', '#f3e9dc', '#9ccc9c', '#fff6f2', '#e8a5c4', '#ffd166'],
+        plate: ['#eef3e4', '#cfdcc2', '#a7b894', '#f7fbf0', '#dde8d0', '60,72,52'],
+        shape: 'round', bodyFx: 'smooth', body: ['#aebfa2', '#dce8d0', '#f4f9ea', '#dce8d0', '#aebfa2'],
+        topFx: 'cream', top: '#f7fbf0', drip: '#ffffff', deco: 'tulips', band: null,
+        candle: ['#7fa068', '#e6f4d8', '#56724a'], engrave: 'leaf' },
+
+      { id: 'fruits',    name: '鲜果物语', emoji: '🍓', tag: '送朋友',
+        sky: ['#2f435c', '#1f2d40', '#101925'], blobs: [['#ffd166', .10], ['#ff9f43', .09], ['#a7d7ff', .12], ['#ff8fa3', .08], ['#69db7c', .08]],
+        glow: ['#bfe0ff', .13], vig: .42, stars: true, orbits: false, flo: 'dot',
+        palette: ['#ff6b6b', '#ffa94d', '#ffd43b', '#69db7c', '#4dabf7', '#ffffff'],
+        plate: ['#f2f7fc', '#cfddea', '#a6bccd', '#fbfefe', '#dce9f4', '60,80,100'],
+        shape: 'round', bodyFx: 'smooth', body: ['#b6c8da', '#e4eff8', '#fdfefe', '#e4eff8', '#b6c8da'],
+        topFx: 'fruits', top: '#fffaf2', drip: null, deco: 'none', band: null,
+        candle: ['#9fb6cc', '#f0f8ff', '#6f8aa4'], engrave: 'berry' },
+
+      { id: 'choco',     name: '浓情巧克力', emoji: '🍫', tag: '送给懂甜的你',
+        sky: ['#26140a', '#180c05', '#0b0502'], blobs: [['#8d5524', .14], ['#c68e55', .10], ['#ffd166', .07], ['#5a3018', .14], ['#e6b88a', .08]],
+        glow: ['#c68e55', .12], vig: .52, stars: false, orbits: false, flo: 'bokeh',
+        palette: ['#c68e55', '#8d5524', '#ffd166', '#e6b88a', '#d98c5f', '#fff0d8'],
+        plate: ['#3a2a20', '#241812', '#120a06', '#463428', '#1c120c', '12,6,2'],
+        shape: 'round', bodyFx: 'choco', body: ['#241004', '#4e2810', '#7a4526', '#4e2810', '#241004'],
+        topFx: 'choco', top: '#4a2812', drip: '#2c1608', deco: 'none', band: null,
+        candle: ['#8a5a30', '#e8c498', '#5e3a18'], engrave: 'gold' },
+
+      { id: 'mountain',  name: '雪山之巅', emoji: '🏔️', tag: '送拼搏的他',
+        sky: ['#061a22', '#041018', '#020a10'], blobs: [['#2dd4bf', .12], ['#4cc9f0', .10], ['#74e0ce', .08], ['#0e3a44', .16], ['#80ffdb', .06]],
+        glow: ['#2dd4bf', .12], vig: .5, stars: true, orbits: false, flo: 'snow', aurora: true,
+        palette: ['#74e0ce', '#4cc9f0', '#b8f2e6', '#ffffff', '#80ffdb', '#a8dadc'],
+        plate: ['#e8f2f7', '#c2d4de', '#92aab8', '#f4fafc', '#d2e2ea', '30,56,66'],
+        shape: 'round', bodyFx: 'snow', body: ['#123d50', '#2e7088', '#6fb0c2', '#2e7088', '#123d50'],
+        topFx: 'snow', top: '#f4fbff', drip: '#ffffff', deco: 'mountain', band: null,
+        candle: ['#2e7088', '#bfe6f2', '#18475c'], engrave: 'white' },
+
+      { id: 'billiards', name: '一杆清台', emoji: '🎱', tag: '送兄弟',
+        sky: ['#08160d', '#050f09', '#020805'], blobs: [['#2d6a4f', .16], ['#52b788', .09], ['#ffd166', .08], ['#14401f', .16], ['#95d5b2', .06]],
+        glow: ['#2f9a56', .12], vig: .55, stars: false, orbits: false, flo: 'bokeh',
+        palette: ['#52b788', '#2d6a4f', '#ffd166', '#ffffff', '#95d5b2', '#f4a261'],
+        plate: ['#1c2a22', '#101813', '#070b08', '#24362b', '#0c120d', '6,20,12'],
+        shape: 'round', bodyFx: 'smooth', body: ['#0b3320', '#186239', '#2f9a56', '#186239', '#0b3320'],
+        topFx: 'billiards', top: '#1f7a43', drip: null, deco: 'none', band: null,
+        candle: ['#1d6b3c', '#9be0b0', '#0d3b22'], engrave: 'gold' },
+
+      { id: 'mahjong',   name: '雀神附体', emoji: '🀄', tag: '送牌友',
+        sky: ['#240a0c', '#170608', '#0c0303'], blobs: [['#9d0208', .16], ['#e9c46a', .12], ['#d62828', .10], ['#6a040f', .15], ['#fcbf49', .08]],
+        glow: ['#d62828', .12], vig: .55, stars: false, orbits: false, flo: 'bokeh',
+        palette: ['#e63946', '#ffd166', '#d62828', '#ffffff', '#fcbf49', '#f77f00'],
+        plate: ['#f3e6cc', '#d8c098', '#ad9268', '#fffaf0', '#e6d4b4', '80,60,30'],
+        shape: 'round', bodyFx: 'smooth', body: ['#b89a6c', '#ecdcbc', '#fffaf0', '#ecdcbc', '#b89a6c'],
+        topFx: 'mahjong', top: '#fffaf0', drip: null, deco: 'none', band: ['#c1272d', '#e63946'],
+        candle: ['#c0392b', '#ff8a95', '#7e1414'], engrave: 'red' },
+
+      { id: 'beer',      name: '微醺时光', emoji: '🍺', tag: '送兄弟',
+        sky: ['#241407', '#170d04', '#0b0602'], blobs: [['#e9b44c', .13], ['#e76f51', .10], ['#ffd166', .09], ['#7a4a16', .14], ['#fff3b0', .06]],
+        glow: ['#e9b44c', .12], vig: .52, stars: false, orbits: false, flo: 'bokeh',
+        palette: ['#f4a261', '#e76f51', '#ffd166', '#e9c46a', '#fff3b0', '#fefae0'],
+        plate: ['#e8d6b0', '#c9ae7e', '#9a7e50', '#f6ecd2', '#d8c29a', '70,50,20'],
+        shape: 'round', bodyFx: 'smooth', body: ['#ad8854', '#e6d2a4', '#fbf3dc', '#e6d2a4', '#ad8854'],
+        topFx: 'cream', top: '#fbf3dc', drip: '#f3e3bc', deco: 'bottles', band: ['#264653', '#2a9d8f'],
+        candle: ['#c9a05e', '#ffeec0', '#8a6a32'], engrave: 'dark' },
+
+      { id: 'fish',      name: '大展宏图', emoji: '🐟', tag: '升迁开业',
+        sky: ['#201406', '#150d04', '#0a0602'], blobs: [['#b08020', .15], ['#e9c46a', .11], ['#d69b2e', .10], ['#7a5410', .15], ['#fff3c4', .07]],
+        glow: ['#e9c46a', .13], vig: .52, stars: false, orbits: false, flo: 'bokeh',
+        palette: ['#ffd166', '#e9b44c', '#fff3c4', '#c9893a', '#ffe8a3', '#f4a261'],
+        plate: ['#e9cd8c', '#c49a44', '#84621c', '#f8e6b4', '#d8b868', '60,42,10'],
+        shape: 'round', bodyFx: 'smooth', body: ['#9a702c', '#e2c278', '#fff2cc', '#e2c278', '#9a702c'],
+        topFx: 'cream', top: '#fff6df', drip: null, deco: 'fish', band: ['#b03a2e', '#d9534f'],
+        candle: ['#b8862f', '#ffe9a8', '#8a5e16'], engrave: 'red' },
+
+      { id: 'cool',      name: '蓝莓酷哥', emoji: '😎', tag: '潮酷男生',
+        sky: ['#2b4260', '#1c2c42', '#0e1726'], blobs: [['#74c0fc', .12], ['#4dabf7', .10], ['#a5d8ff', .10], ['#ffffff', .06], ['#69db7c', .06]],
+        glow: ['#74c0fc', .13], vig: .42, stars: true, orbits: false, flo: 'snow',
+        palette: ['#74c0fc', '#4dabf7', '#a5d8ff', '#ffffff', '#ffd166', '#b197fc'],
+        plate: ['#eaf4fc', '#c8dcee', '#9db6d2', '#f6fbff', '#d8e9f8', '40,70,100'],
+        shape: 'round', bodyFx: 'smooth', body: ['#a6c6e4', '#d6e9fa', '#f6fbff', '#d6e9fa', '#a6c6e4'],
+        topFx: 'blueberry', top: '#f6fbff', drip: '#ffffff', deco: 'sunglasses', band: null,
+        candle: ['#6aa6dd', '#d6ecff', '#3d78b0'], engrave: 'navy' },
+
+      { id: 'moon',      name: '月下告白', emoji: '🌙', tag: '浪漫告白',
+        sky: ['#0e1436', '#090e28', '#040614'], blobs: [['#5b6ee1', .12], ['#8b9bff', .09], ['#f9a8d4', .07], ['#2a2f66', .14], ['#ffffff', .05]],
+        glow: ['#c7d2fe', .13], vig: .5, stars: true, orbits: false, flo: 'snow', moon: true,
+        palette: ['#e0e7ff', '#c7d2fe', '#ffffff', '#ffd166', '#f9a8d4', '#a5b4fc'],
+        plate: ['#dfe4f4', '#bcc6e0', '#8f9cc0', '#f2f4ff', '#ccd6ee', '40,48,80'],
+        shape: 'round', bodyFx: 'crater', body: ['#aab4d4', '#dde3f6', '#f7f9ff', '#dde3f6', '#aab4d4'],
+        topFx: 'moon', top: '#f7f9ff', drip: null, deco: 'moonheart', band: null,
+        candle: ['#8b94c0', '#eef1ff', '#5a6290'], engrave: 'navy' }
+    ];
+    function getTheme() { return THEMES.find(t => t.id === cfg.theme) || THEMES[0]; }
+
 
     const rnd = (a = 1, b) => b === undefined ? Math.random() * a : a + Math.random() * (b - a);
     function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296 } }
@@ -727,55 +916,472 @@
       L.topY = L.baseY - L.cakeH;              // 蛋糕顶
       L.candleW = s * 0.016;
       L.candleH = s * 0.115;
-      L.candleBase = L.topY + L.topRy * 0.2;
+      // 心形蛋糕顶面比圆柱顶面低, 蜡烛要插在心尖上方
+      const heartShape = getTheme().shape === 'heart';
+      L.candleBase = heartShape ? L.topY + L.cakeH * 0.30 : L.topY + L.topRy * 0.2;
       L.candleTop = L.candleBase - L.candleH;
       L.flameY = L.candleTop - 6;              // 火焰根部
+      L.heart = heartShape;                    // 供绘制/刻字模块共享
     }
 
-    /* ================= 背景 (静态预渲染) ================= */
+    /* ================= 背景 (静态预渲染, 按主题切换) ================= */
     function renderBG() {
       const c = bgCv.getContext('2d');
       c.setTransform(DPR, 0, 0, DPR, 0, 0);
-      c.fillStyle = '#04050d'; c.fillRect(0, 0, W, H);
-
-      // 深空星云
-      const R = mulberry32(7);
-      const cols = ['#1c2a6e', '#31255f', '#123a5e', '#3a1e5c', '#0e2a4a'];
-      for (let i = 0; i < 6; i++)
-        blob(c, R() * W, R() * H * 0.85, L.s * (0.25 + R() * 0.3), cols[i % cols.length], 0.13);
-      // 蛋糕背后中央光晕
-      blob(c, L.cx, L.topY + L.cakeH * 0.5, L.s * 0.55, '#3b57c4', 0.10);
-      // 暗角
-      const g = c.createRadialGradient(W / 2, H * 0.45, Math.min(W, H) * 0.35, W / 2, H * 0.5, Math.max(W, H) * 0.75);
-      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.55)');
+      const th = getTheme();
+      // 竖向夜空渐变
+      const g = c.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, th.sky[0]); g.addColorStop(0.55, th.sky[1]); g.addColorStop(1, th.sky[2]);
       c.fillStyle = g; c.fillRect(0, 0, W, H);
+
+      const R = mulberry32(7);
+      if (th.moon) {
+        // 一轮柔月
+        const mx = W * 0.74, my = H * 0.16, mr = L.s * 0.13;
+        blob(c, mx, my, mr * 2.4, '#c7d2fe', 0.10);
+        const mg = c.createRadialGradient(mx, my, mr * 0.2, mx, my, mr);
+        mg.addColorStop(0, 'rgba(255,255,255,0.95)'); mg.addColorStop(0.75, 'rgba(224,231,255,0.7)'); mg.addColorStop(1, 'rgba(199,210,254,0)');
+        c.fillStyle = mg; c.beginPath(); c.arc(mx, my, mr, 0, TAU); c.fill();
+      }
+      if (th.aurora) {
+        // 极光: 顶部三缕缓慢的光带
+        for (let i = 0; i < 3; i++) {
+          c.save();
+          c.globalAlpha = 0.10 - i * 0.02;
+          const ag = c.createLinearGradient(0, 0, W, H * 0.4);
+          ag.addColorStop(0, 'rgba(45,212,191,0)'); ag.addColorStop(0.5, i === 2 ? 'rgba(128,255,219,0.55)' : 'rgba(76,201,240,0.5)'); ag.addColorStop(1, 'rgba(167,139,250,0)');
+          c.fillStyle = ag;
+          c.beginPath();
+          c.moveTo(0, H * (0.06 + i * 0.07));
+          c.bezierCurveTo(W * 0.3, H * (-0.02 + i * 0.05), W * 0.6, H * (0.20 + i * 0.06), W, H * (0.08 + i * 0.08));
+          c.lineTo(W, 0); c.lineTo(0, 0); c.closePath(); c.fill();
+          c.restore();
+        }
+      }
+      // 星云 / 散景光斑
+      for (const [col, a] of th.blobs)
+        blob(c, R() * W, R() * H * 0.88, L.s * (0.22 + R() * 0.32), col, a * (0.7 + R() * 0.5));
+      // 蛋糕背后中央光晕
+      blob(c, L.cx, L.topY + L.cakeH * 0.5, L.s * 0.55, th.glow[0], th.glow[1]);
+      // 地面柔光 (蛋糕底部)
+      blob(c, L.cx, L.baseY + L.baseRy, L.s * 0.42, th.glow[0], th.glow[1] * 0.5);
+      // 暗角
+      const vg = c.createRadialGradient(W / 2, H * 0.45, Math.min(W, H) * 0.35, W / 2, H * 0.5, Math.max(W, H) * 0.75);
+      vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, `rgba(0,0,0,${th.vig})`);
+      c.fillStyle = vg; c.fillRect(0, 0, W, H);
     }
 
-    /* ================= 蛋糕 (静态预渲染) ================= */
+    /* ================= 蛋糕绘制小元件库 ================= */
+    // 心形路径 (x,y 为心形中心)
+    function heartPath(c, x, y, w, h) {
+      const hw = w / 2;
+      c.beginPath();
+      c.moveTo(x, y + h * 0.42);
+      c.bezierCurveTo(x - hw * 1.02, y + h * 0.12, x - hw * 1.02, y - h * 0.16, x - hw * 0.52, y - h * 0.34);
+      c.bezierCurveTo(x - hw * 0.20, y - h * 0.52, x, y - h * 0.30, x, y - h * 0.10);
+      c.bezierCurveTo(x, y - h * 0.30, x + hw * 0.20, y - h * 0.52, x + hw * 0.52, y - h * 0.34);
+      c.bezierCurveTo(x + hw * 1.02, y - h * 0.16, x + hw * 1.02, y + h * 0.12, x, y + h * 0.42);
+      c.closePath();
+    }
+    function heartFace() { return { x: L.cx, y: L.topY + L.cakeH * 0.56, w: L.rw * 2.06, h: L.cakeH * 0.96 }; }
+
+    // 立体翻糖爱心
+    function drawPuffHeart(c, x, y, s, col, deep) {
+      c.save(); c.translate(x, y);
+      c.shadowColor = 'rgba(0,0,0,0.25)'; c.shadowBlur = s * 0.18; c.shadowOffsetY = s * 0.06;
+      heartPath(c, 0, 0, s, s * 0.92);
+      const g = c.createRadialGradient(-s * 0.2, -s * 0.25, s * 0.05, 0, 0, s * 0.7);
+      g.addColorStop(0, '#ffffff'); g.addColorStop(0.35, col); g.addColorStop(1, deep || col);
+      c.fillStyle = g; c.fill();
+      c.shadowColor = 'transparent'; c.shadowBlur = 0; c.shadowOffsetY = 0;
+      heartPath(c, -s * 0.18, -s * 0.24, s * 0.4, s * 0.3);
+      c.fillStyle = 'rgba(255,255,255,0.35)'; c.fill();
+      c.restore();
+    }
+
+    // 盛开的玫瑰 (层层花瓣 + 中心螺旋)
+    function drawRose(c, x, y, r, outer, inner, deep, rot = 0) {
+      c.save(); c.translate(x, y); c.rotate(rot);
+      c.shadowColor = 'rgba(0,0,0,0.22)'; c.shadowBlur = r * 0.25; c.shadowOffsetY = r * 0.08;
+      const petal = (ang, dist, pw, ph, co, ci) => {
+        c.save(); c.rotate(ang); c.translate(dist, 0);
+        const g = c.createLinearGradient(0, -ph, 0, ph);
+        g.addColorStop(0, ci); g.addColorStop(1, co);
+        c.fillStyle = g;
+        c.beginPath(); c.ellipse(0, 0, pw, ph, 0, 0, TAU); c.fill();
+        c.restore();
+      };
+      for (let i = 0; i < 9; i++) petal(i / 9 * TAU, r * 0.46, r * 0.44, r * 0.30, outer, inner);
+      for (let i = 0; i < 7; i++) petal(i / 7 * TAU + 0.25, r * 0.24, r * 0.34, r * 0.24, inner, outer);
+      c.shadowBlur = 0;
+      const cg = c.createRadialGradient(0, 0, 1, 0, 0, r * 0.3);
+      cg.addColorStop(0, deep); cg.addColorStop(1, inner);
+      c.fillStyle = cg;
+      c.beginPath(); c.arc(0, 0, r * 0.26, 0, TAU); c.fill();
+      // 中心螺旋
+      c.strokeStyle = deep; c.lineWidth = Math.max(1.2, r * 0.06); c.lineCap = 'round';
+      c.beginPath();
+      for (let a = 0; a < Math.PI * 3.4; a += 0.25) {
+        const rr = r * 0.02 + a * r * 0.035;
+        const px = Math.cos(a) * rr, py = Math.sin(a) * rr;
+        a === 0 ? c.moveTo(px, py) : c.lineTo(px, py);
+      }
+      c.stroke();
+      c.restore();
+    }
+
+    // 蝴蝶结
+    function drawBow(c, x, y, s, col, deep) {
+      c.save(); c.translate(x, y);
+      const loop = dir => {
+        c.save(); c.scale(dir, 1);
+        const g = c.createLinearGradient(0, -s * 0.3, 0, s * 0.3);
+        g.addColorStop(0, col); g.addColorStop(1, deep);
+        c.fillStyle = g;
+        c.beginPath();
+        c.moveTo(0, 0);
+        c.bezierCurveTo(-s * 0.5, -s * 0.55, -s * 1.05, -s * 0.35, -s * 1.0, 0);
+        c.bezierCurveTo(-s * 1.05, s * 0.35, -s * 0.5, s * 0.55, 0, 0);
+        c.fill();
+        c.restore();
+      };
+      c.shadowColor = 'rgba(0,0,0,0.2)'; c.shadowBlur = s * 0.2; c.shadowOffsetY = s * 0.05;
+      // 飘带尾
+      c.fillStyle = deep;
+      c.beginPath(); c.moveTo(-s * 0.1, s * 0.12); c.lineTo(-s * 0.42, s * 0.78); c.lineTo(-s * 0.12, s * 0.62); c.lineTo(s * 0.05, s * 0.18); c.closePath(); c.fill();
+      c.beginPath(); c.moveTo(s * 0.1, s * 0.12); c.lineTo(s * 0.42, s * 0.78); c.lineTo(s * 0.12, s * 0.62); c.lineTo(-s * 0.05, s * 0.18); c.closePath(); c.fill();
+      loop(-1); loop(1);
+      c.shadowBlur = 0;
+      const kg = c.createRadialGradient(0, -s * 0.1, 1, 0, 0, s * 0.22);
+      kg.addColorStop(0, col); kg.addColorStop(1, deep);
+      c.fillStyle = kg;
+      roundRect(c, -s * 0.16, -s * 0.16, s * 0.32, s * 0.32, s * 0.08); c.fill();
+      c.restore();
+    }
+
+    // 皇冠
+    function drawCrown(c, x, y, w, h) {
+      c.save(); c.translate(x, y);
+      const tips = 5, u = w / tips;
+      c.shadowColor = 'rgba(0,0,0,0.3)'; c.shadowBlur = h * 0.3; c.shadowOffsetY = h * 0.08;
+      c.beginPath();
+      c.moveTo(-w / 2, h * 0.5);
+      c.lineTo(-w / 2, -h * 0.15);
+      for (let i = 0; i < tips; i++) {
+        const x0 = -w / 2 + i * u, x1 = x0 + u;
+        c.quadraticCurveTo((x0 + x1) / 2, -h * 1.05, x1, -h * 0.15);
+      }
+      c.lineTo(w / 2, h * 0.5); c.closePath();
+      const g = c.createLinearGradient(0, -h, 0, h * 0.5);
+      g.addColorStop(0, '#fff3c4'); g.addColorStop(0.5, '#ffd166'); g.addColorStop(1, '#c9893a');
+      c.fillStyle = g; c.fill();
+      c.shadowBlur = 0;
+      roundRect(c, -w / 2, h * 0.12, w, h * 0.4, h * 0.1); c.fillStyle = '#e9b44c'; c.fill();
+      const jewels = ['#ff5d73', '#74c0fc', '#52b788'];
+      for (let i = 0; i < tips; i++) {
+        const px = -w / 2 + (i + 0.5) * u;
+        c.fillStyle = '#fff8e0'; c.beginPath(); c.arc(px, -h * 0.12, h * 0.13, 0, TAU); c.fill();
+        c.fillStyle = jewels[i % 3]; c.beginPath(); c.arc(-w / 2 + (i + 0.5) * u, h * 0.32, h * 0.12, 0, TAU); c.fill();
+      }
+      c.restore();
+    }
+
+    // 郁金香
+    function drawTulip(c, x, baseY, s, col, deep) {
+      c.save(); c.translate(x, baseY);
+      c.strokeStyle = '#5f8f4f'; c.lineWidth = s * 0.07; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(s * 0.12, -s * 0.4, 0, -s * 0.78); c.stroke();
+      c.fillStyle = '#6fa05c';
+      c.beginPath(); c.ellipse(-s * 0.16, -s * 0.36, s * 0.16, s * 0.07, -0.6, 0, TAU); c.fill();
+      c.beginPath(); c.ellipse(s * 0.18, -s * 0.28, s * 0.18, s * 0.07, 0.5, 0, TAU); c.fill();
+      const y0 = -s * 0.78;
+      c.shadowColor = 'rgba(0,0,0,0.15)'; c.shadowBlur = s * 0.1;
+      const cup = co => {
+        c.fillStyle = co;
+        c.beginPath();
+        c.moveTo(0, y0 - s * 0.34);
+        c.quadraticCurveTo(-s * 0.26, y0 - s * 0.2, 0, y0 + s * 0.04);
+        c.quadraticCurveTo(s * 0.26, y0 - s * 0.2, 0, y0 - s * 0.34);
+        c.fill();
+      };
+      cup(deep);
+      c.save(); c.transform(0.72, 0, 0, 1, 0, 0); cup(col); c.restore();
+      c.restore();
+    }
+
+    // 啤酒瓶
+    function drawBottle(c, x, baseY, h, glass, label) {
+      const w = h * 0.26;
+      c.save(); c.translate(x, baseY);
+      c.shadowColor = 'rgba(0,0,0,0.3)'; c.shadowBlur = h * 0.06; c.shadowOffsetX = w * 0.1;
+      const g = c.createLinearGradient(-w / 2, 0, w / 2, 0);
+      g.addColorStop(0, glass[2]); g.addColorStop(0.5, glass[1]); g.addColorStop(1, glass[0]);
+      c.fillStyle = g;
+      c.beginPath();
+      c.moveTo(-w * 0.16, -h * 0.98); c.lineTo(w * 0.16, -h * 0.98);
+      c.lineTo(w * 0.16, -h * 0.74);
+      c.quadraticCurveTo(w * 0.42, -h * 0.7, w * 0.44, -h * 0.58);
+      c.lineTo(w * 0.44, 0); c.quadraticCurveTo(0, w * 0.14, -w * 0.44, 0);
+      c.lineTo(-w * 0.44, -h * 0.58); c.quadraticCurveTo(-w * 0.42, -h * 0.7, -w * 0.16, -h * 0.74);
+      c.closePath(); c.fill();
+      c.shadowBlur = 0;
+      c.fillStyle = '#e8e0c8'; c.fillRect(-w * 0.18, -h * 0.99, w * 0.36, h * 0.1);   // 瓶盖
+      roundRect(c, -w * 0.34, -h * 0.52, w * 0.68, h * 0.3, w * 0.06);
+      c.fillStyle = '#fbf3dc'; c.fill();
+      c.fillStyle = label; c.fillRect(-w * 0.34, -h * 0.42, w * 0.68, h * 0.08);
+      c.fillStyle = '#8a6a32'; c.font = `700 ${h * 0.075}px Georgia,serif`; c.textAlign = 'center';
+      c.fillText('BEER', 0, -h * 0.29);
+      c.strokeStyle = 'rgba(255,255,255,0.5)'; c.lineWidth = 1.5;
+      c.beginPath(); c.moveTo(-w * 0.3, -h * 0.62); c.lineTo(-w * 0.3, -h * 0.12); c.stroke();
+      c.restore();
+    }
+
+    // 锦鲤
+    function drawKoi(c, x, y, s, rot) {
+      c.save(); c.translate(x, y); c.rotate(rot);
+      // 尾巴
+      c.fillStyle = '#e2533c';
+      c.beginPath(); c.moveTo(-s * 0.5, 0);
+      c.quadraticCurveTo(-s * 0.92, -s * 0.3, -s * 0.98, -s * 0.06);
+      c.quadraticCurveTo(-s * 0.8, 0, -s * 0.98, s * 0.14);
+      c.quadraticCurveTo(-s * 0.9, s * 0.3, -s * 0.5, 0); c.fill();
+      c.shadowColor = 'rgba(0,0,0,0.25)'; c.shadowBlur = s * 0.12;
+      const g = c.createRadialGradient(-s * 0.1, -s * 0.15, 2, 0, 0, s * 0.55);
+      g.addColorStop(0, '#ffffff'); g.addColorStop(0.6, '#fff2d8'); g.addColorStop(1, '#f0c878');
+      c.fillStyle = g;
+      c.beginPath(); c.ellipse(0, 0, s * 0.52, s * 0.28, 0, 0, TAU); c.fill();
+      c.shadowBlur = 0;
+      // 红斑
+      c.fillStyle = '#e2533c';
+      c.beginPath(); c.ellipse(s * 0.12, -s * 0.08, s * 0.18, s * 0.12, -0.4, 0, TAU); c.fill();
+      c.beginPath(); c.ellipse(-s * 0.16, s * 0.06, s * 0.14, s * 0.09, 0.5, 0, TAU); c.fill();
+      // 鳍
+      c.fillStyle = '#e2533c';
+      c.beginPath(); c.ellipse(-s * 0.05, -s * 0.22, s * 0.12, s * 0.05, -0.5, 0, TAU); c.fill();
+      // 眼
+      c.fillStyle = '#222'; c.beginPath(); c.arc(s * 0.36, -s * 0.08, s * 0.035, 0, TAU); c.fill();
+      c.restore();
+    }
+
+    // 天鹅 (长颈 + 奶油玫瑰身躯)
+    function drawSwan(c, x, y, s) {
+      c.save(); c.translate(x, y);
+      c.shadowColor = 'rgba(0,0,0,0.2)'; c.shadowBlur = s * 0.18; c.shadowOffsetY = s * 0.06;
+      // 身体: 奶油裱花团
+      const bg2 = c.createRadialGradient(-s * 0.1, -s * 0.1, 2, 0, s * 0.1, s * 0.5);
+      bg2.addColorStop(0, '#ffffff'); bg2.addColorStop(1, '#e4d6bc');
+      c.fillStyle = bg2;
+      c.beginPath(); c.ellipse(0, s * 0.1, s * 0.48, s * 0.3, 0, 0, TAU); c.fill();
+      c.shadowBlur = 0;
+      // 羽毛弧线
+      c.strokeStyle = 'rgba(180,160,120,0.5)'; c.lineWidth = 1.4;
+      for (let i = -2; i <= 2; i++) {
+        c.beginPath();
+        c.ellipse(i * s * 0.1, s * 0.12 + Math.abs(i) * s * 0.03, s * (0.3 - Math.abs(i) * 0.05), s * 0.1, 0, Math.PI * 0.1, Math.PI * 0.9);
+        c.stroke();
+      }
+      // 长颈
+      c.strokeStyle = '#fbf5ea'; c.lineCap = 'round';
+      c.lineWidth = s * 0.17;
+      c.beginPath(); c.moveTo(s * 0.2, -s * 0.02);
+      c.bezierCurveTo(s * 0.5, -s * 0.35, s * 0.34, -s * 0.75, s * 0.1, -s * 0.82); c.stroke();
+      c.lineWidth = s * 0.1; c.strokeStyle = '#e0d2b4';
+      c.beginPath(); c.moveTo(s * 0.24, -s * 0.02);
+      c.bezierCurveTo(s * 0.52, -s * 0.34, s * 0.38, -s * 0.7, s * 0.16, -s * 0.78); c.stroke();
+      // 头 + 喙
+      c.fillStyle = '#fbf5ea';
+      c.beginPath(); c.ellipse(s * 0.06, -s * 0.82, s * 0.1, s * 0.075, 0.3, 0, TAU); c.fill();
+      c.fillStyle = '#e8853a';
+      c.beginPath(); c.moveTo(-s * 0.03, -s * 0.82); c.lineTo(-s * 0.18, -s * 0.78); c.lineTo(-s * 0.02, -s * 0.76); c.fill();
+      c.fillStyle = '#333'; c.beginPath(); c.arc(s * 0.08, -s * 0.85, s * 0.012, 0, TAU); c.fill();
+      c.restore();
+    }
+
+    // 酷哥墨镜 (贴在蛋糕正面)
+    function drawSunglasses(c, x, y, w) {
+      const h = w * 0.34;
+      c.save(); c.translate(x, y);
+      c.shadowColor = 'rgba(0,0,0,0.35)'; c.shadowBlur = w * 0.05; c.shadowOffsetY = w * 0.03;
+      const lens = dir => {
+        const gx = dir * w * 0.21;
+        const g = c.createLinearGradient(gx, -h / 2, gx, h / 2);
+        g.addColorStop(0, '#3a4456'); g.addColorStop(0.5, '#10141d'); g.addColorStop(1, '#000');
+        c.fillStyle = g;
+        roundRect(c, gx - w * 0.2, -h / 2, w * 0.4, h, h * 0.28); c.fill();
+        c.strokeStyle = '#ffd166'; c.lineWidth = 2; roundRect(c, gx - w * 0.2, -h / 2, w * 0.4, h, h * 0.28); c.stroke();
+        c.strokeStyle = 'rgba(255,255,255,0.55)'; c.lineWidth = 2;
+        c.beginPath(); c.moveTo(gx - w * 0.13, -h * 0.22); c.lineTo(gx + w * 0.05, -h * 0.05); c.stroke();
+      };
+      lens(-1); lens(1);
+      c.strokeStyle = '#1a1f2a'; c.lineWidth = w * 0.05; c.lineCap = 'round';
+      c.beginPath(); c.arc(0, 0, w * 0.045, 0, Math.PI); c.stroke();
+      c.restore();
+    }
+
+    // 台球 + 球杆
+    function drawPoolBall(c, x, y, r, col, num) {
+      c.save(); c.translate(x, y);
+      c.shadowColor = 'rgba(0,0,0,0.35)'; c.shadowBlur = r * 0.3; c.shadowOffsetY = r * 0.12;
+      const g = c.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.1, 0, 0, r);
+      g.addColorStop(0, '#ffffff'); g.addColorStop(0.35, col); g.addColorStop(1, '#1a1a1a');
+      c.fillStyle = g; c.beginPath(); c.arc(0, 0, r, 0, TAU); c.fill();
+      c.shadowBlur = 0;
+      c.fillStyle = '#f8f9fa'; c.beginPath(); c.arc(0, 0, r * 0.42, 0, TAU); c.fill();
+      c.fillStyle = col; c.font = `700 ${r * 0.55}px Arial`; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(num, 0, r * 0.05);
+      c.restore();
+    }
+
+    // 麻将牌
+    function drawTile(c, x, y, w, h, sym, col, rot) {
+      c.save(); c.translate(x, y); c.rotate(rot);
+      c.shadowColor = 'rgba(0,0,0,0.3)'; c.shadowBlur = h * 0.12; c.shadowOffsetY = h * 0.05;
+      const g = c.createLinearGradient(0, -h / 2, 0, h / 2);
+      g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#e8dcc0');
+      c.fillStyle = g; roundRect(c, -w / 2, -h / 2, w, h, w * 0.1); c.fill();
+      c.shadowBlur = 0;
+      c.strokeStyle = '#cdb98c'; c.lineWidth = 1.5; roundRect(c, -w / 2, -h / 2, w, h, w * 0.1); c.stroke();
+      c.fillStyle = col; c.font = `700 ${h * 0.5}px "PingFang SC",serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(sym, 0, h * 0.04);
+      c.restore();
+    }
+
+    // 水果小元件
+    function drawBlueberry(c, x, y, r) {
+      c.save(); c.translate(x, y);
+      const g = c.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
+      g.addColorStop(0, '#9db7e8'); g.addColorStop(0.5, '#3d5a9e'); g.addColorStop(1, '#1e2f60');
+      c.fillStyle = g; c.beginPath(); c.arc(0, 0, r, 0, TAU); c.fill();
+      c.fillStyle = '#16244a'; c.beginPath(); c.arc(0, 0, r * 0.28, 0, TAU); c.fill();
+      c.strokeStyle = '#5a76b8'; c.lineWidth = 1.2;
+      for (let i = 0; i < 5; i++) { const a = i / 5 * TAU; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * r * 0.26, Math.sin(a) * r * 0.26); c.stroke(); }
+      c.restore();
+    }
+    function drawStrawberry(c, x, y, s, rot) {
+      c.save(); c.translate(x, y); c.rotate(rot);
+      const g = c.createRadialGradient(0, -s * 0.2, 1, 0, 0, s);
+      g.addColorStop(0, '#ff7a7a'); g.addColorStop(1, '#c81e2e');
+      c.fillStyle = g;
+      c.beginPath();
+      c.moveTo(0, s * 0.7);
+      c.bezierCurveTo(-s * 0.8, s * 0.1, -s * 0.55, -s * 0.55, 0, -s * 0.42);
+      c.bezierCurveTo(s * 0.55, -s * 0.55, s * 0.8, s * 0.1, 0, s * 0.7);
+      c.fill();
+      c.fillStyle = '#ffe9a8';
+      for (let i = 0; i < 7; i++) {
+        const a = i / 7 * TAU, rr = s * (0.2 + (i % 3) * 0.12);
+        c.save(); c.rotate(a); c.beginPath(); c.ellipse(0, -rr, s * 0.05, s * 0.09, 0, 0, TAU); c.fill(); c.restore();
+      }
+      c.fillStyle = '#4e8f45';
+      c.beginPath(); c.moveTo(0, -s * 0.42); c.lineTo(-s * 0.3, -s * 0.66); c.lineTo(-s * 0.06, -s * 0.52); c.lineTo(s * 0.3, -s * 0.66); c.lineTo(s * 0.06, -s * 0.52); c.closePath(); c.fill();
+      c.restore();
+    }
+    function drawKiwi(c, x, y, r) {
+      c.save(); c.translate(x, y);
+      c.fillStyle = '#8a6233'; c.beginPath(); c.arc(0, 0, r, 0, TAU); c.fill();
+      c.fillStyle = '#8cc63f'; c.beginPath(); c.arc(0, 0, r * 0.88, 0, TAU); c.fill();
+      c.fillStyle = '#eaffc0'; c.beginPath(); c.arc(0, 0, r * 0.4, 0, TAU); c.fill();
+      c.strokeStyle = '#3f6416'; c.lineWidth = 1;
+      for (let i = 0; i < 14; i++) { const a = i / 14 * TAU; c.beginPath(); c.moveTo(Math.cos(a) * r * 0.42, Math.sin(a) * r * 0.42); c.lineTo(Math.cos(a) * r * 0.82, Math.sin(a) * r * 0.82); c.stroke(); }
+      c.fillStyle = '#22330d';
+      for (let i = 0; i < 14; i++) { const a = i / 14 * TAU + 0.2; c.beginPath(); c.arc(Math.cos(a) * r * 0.62, Math.sin(a) * r * 0.62, r * 0.05, 0, TAU); c.fill(); }
+      c.restore();
+    }
+    function drawOrange(c, x, y, r) {
+      c.save(); c.translate(x, y);
+      const g = c.createRadialGradient(-r * 0.2, -r * 0.2, 1, 0, 0, r);
+      g.addColorStop(0, '#ffd98a'); g.addColorStop(1, '#f08a1c');
+      c.fillStyle = g; c.beginPath(); c.arc(0, 0, r, 0, TAU); c.fill();
+      c.strokeStyle = 'rgba(255,255,255,0.65)'; c.lineWidth = 1;
+      for (let i = 0; i < 8; i++) { const a = i / 8 * TAU; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * r * 0.92, Math.sin(a) * r * 0.92); c.stroke(); }
+      c.fillStyle = '#fff3d0'; c.beginPath(); c.arc(0, 0, r * 0.14, 0, TAU); c.fill();
+      c.restore();
+    }
+    function drawRaspberry(c, x, y, r) {
+      c.save(); c.translate(x, y);
+      const ps = [['#e85d75', 0, -r * 0.25], ['#c62a48', -r * 0.28, 0], ['#e85d75', 0, r * 0.05], ['#c62a48', r * 0.28, 0], ['#b01e3a', -r * 0.14, r * 0.28], ['#e85d75', r * 0.14, r * 0.28]];
+      for (const [col, dx, dy] of ps) {
+        const g = c.createRadialGradient(dx - r * 0.06, dy - r * 0.06, 1, dx, dy, r * 0.26);
+        g.addColorStop(0, '#ff9aaa'); g.addColorStop(1, col);
+        c.fillStyle = g; c.beginPath(); c.arc(dx, dy, r * 0.26, 0, TAU); c.fill();
+      }
+      c.restore();
+    }
+    function drawNut(c, x, y, r, rot) {
+      c.save(); c.translate(x, y); c.rotate(rot);
+      const g = c.createLinearGradient(0, -r, 0, r);
+      g.addColorStop(0, '#e8c088'); g.addColorStop(1, '#9a6a32');
+      c.fillStyle = g; c.beginPath(); c.ellipse(0, 0, r * 0.72, r, 0, 0, TAU); c.fill();
+      c.strokeStyle = '#7a4e20'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, -r * 0.7); c.lineTo(0, r * 0.7); c.stroke();
+      c.restore();
+    }
+    function drawPearl(c, x, y, r) {
+      const g = c.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
+      g.addColorStop(0, '#ffffff'); g.addColorStop(0.7, '#f3e8f0'); g.addColorStop(1, '#cbb8c8');
+      c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
+    }
+    function drawLeaf(c, x, y, r, rot) {
+      c.save(); c.translate(x, y); c.rotate(rot);
+      const g = c.createLinearGradient(-r, 0, r, 0);
+      g.addColorStop(0, '#3f7a3a'); g.addColorStop(1, '#7fae5c');
+      c.fillStyle = g;
+      c.beginPath(); c.moveTo(-r, 0); c.quadraticCurveTo(0, -r * 0.6, r, 0); c.quadraticCurveTo(0, r * 0.6, -r, 0); c.fill();
+      c.restore();
+    }
+
+    /* ================= 蛋糕 (静态预渲染, 按主题绘制) ================= */
     function renderCake() {
       const c = cakeCv.getContext('2d');
       c.setTransform(DPR, 0, 0, DPR, 0, 0);
       c.clearRect(0, 0, W, H);
+      const th = getTheme();
       const { cx, topY, baseY, rw, topRy, baseRy } = L;
-      const R = mulberry32(20240812);   // 固定种子: 装饰在窗口缩放后保持一致
-      let g;
+      const R = mulberry32(20240812);
+      drawPlate(c, th);
+      if (th.shape === 'heart') drawHeartCake(c, th, R);
+      else drawRoundCake(c, th, R);
+      drawDeco(c, th, R);
+      drawCandles(c, th);
+    }
 
-      /* ---- 白色托盘 ---- */
+    function drawPlate(c, th) {
+      const { cx, baseY, rw, baseRy } = L;
+      const p = th.plate;
+      let g;
       blob(c, cx, baseY + baseRy * 1.1, rw * 1.5, '#000000', 0.5);
       g = c.createLinearGradient(0, baseY, 0, baseY + baseRy * 2.4);
-      g.addColorStop(0, '#f4f7ff'); g.addColorStop(0.6, '#c6d2e6'); g.addColorStop(1, '#8fa2c4');
+      g.addColorStop(0, p[0]); g.addColorStop(0.6, p[1]); g.addColorStop(1, p[2]);
       c.fillStyle = g;
       c.beginPath(); c.ellipse(cx, baseY + baseRy * 0.55, rw * 1.42, baseRy * 1.75, 0, 0, TAU); c.fill();
       g = c.createLinearGradient(0, baseY - 4, 0, baseY + baseRy * 1.4);
-      g.addColorStop(0, '#eef3fd'); g.addColorStop(1, '#b9c7e0');
+      g.addColorStop(0, p[3]); g.addColorStop(1, p[4]);
       c.fillStyle = g;
       c.beginPath(); c.ellipse(cx, baseY + baseRy * 0.30, rw * 1.26, baseRy * 1.32, 0, 0, TAU); c.fill();
-      c.strokeStyle = 'rgba(255,255,255,0.65)'; c.lineWidth = 1.5;
+      c.strokeStyle = 'rgba(255,255,255,0.55)'; c.lineWidth = 1.5;
       c.beginPath(); c.ellipse(cx, baseY + baseRy * 0.55, rw * 1.42, baseRy * 1.75, 0, Math.PI * 1.05, Math.PI * 1.95); c.stroke();
-      c.fillStyle = 'rgba(25,35,70,0.5)';
+      c.fillStyle = `rgba(${p[5]},0.5)`;
       c.beginPath(); c.ellipse(cx, baseY + baseRy * 0.22, rw * 1.02, baseRy * 1.0, 0, 0, TAU); c.fill();
+    }
 
-      /* ---- 蛋糕侧身 (深蓝星河圆柱) ---- */
+    function bodyGradient(c, th, x0, x1) {
+      const b = th.body, g = c.createLinearGradient(x0, 0, x1, 0);
+      g.addColorStop(0, b[0]); g.addColorStop(0.16, b[1]); g.addColorStop(0.5, b[2]);
+      g.addColorStop(0.84, b[3]); g.addColorStop(1, b[4]);
+      return g;
+    }
+    function bodyShading(c) {
+      const { cx, topY, baseY, rw, baseRy } = L;
+      let g = c.createLinearGradient(0, topY, 0, baseY);
+      g.addColorStop(0, 'rgba(2,4,14,0)'); g.addColorStop(1, 'rgba(2,4,14,0.42)');
+      c.fillStyle = g; c.fillRect(cx - rw, topY, rw * 2, L.cakeH + baseRy);
+      g = c.createLinearGradient(cx - rw, 0, cx + rw, 0);
+      g.addColorStop(0, 'rgba(2,4,14,0.45)'); g.addColorStop(0.2, 'rgba(2,4,14,0)');
+      g.addColorStop(0.8, 'rgba(2,4,14,0)'); g.addColorStop(1, 'rgba(2,4,14,0.45)');
+      c.fillStyle = g; c.fillRect(cx - rw, topY, rw * 2, L.cakeH + baseRy);
+    }
+
+    function drawRoundCake(c, th, R) {
+      const { cx, topY, baseY, rw, topRy, baseRy } = L;
       const bodyPath = () => {
         c.beginPath();
         c.moveTo(cx + rw, topY);
@@ -784,93 +1390,383 @@
         c.lineTo(cx - rw, topY);
         c.closePath();
       };
-      bodyPath();
-      g = c.createLinearGradient(cx - rw, 0, cx + rw, 0);
-      g.addColorStop(0, '#070b20'); g.addColorStop(0.16, '#0e1740');
-      g.addColorStop(0.5, '#1f2f7e'); g.addColorStop(0.84, '#0e1740'); g.addColorStop(1, '#070b20');
-      c.fillStyle = g; c.fill();
+      bodyPath(); c.fillStyle = bodyGradient(c, th, cx - rw, cx + rw); c.fill();
 
       c.save(); bodyPath(); c.clip();
-      // 星云斑块
-      for (let i = 0; i < 14; i++) {
-        const x = cx + (R() * 2 - 1) * rw * 0.92, y = topY + R() * L.cakeH;
-        blob(c, x, y, L.s * (0.02 + R() * 0.05),
-          ['#3f5efb', '#9b5de5', '#f15bb5', '#22d3ee', '#ffd166'][(R() * 5) | 0], 0.10 + R() * 0.14);
+      if (th.bodyFx === 'galaxy') {
+        for (let i = 0; i < 14; i++)
+          blob(c, cx + (R() * 2 - 1) * rw * 0.92, topY + R() * L.cakeH, L.s * (0.02 + R() * 0.05),
+            ['#3f5efb', '#9b5de5', '#f15bb5', '#22d3ee', '#ffd166'][(R() * 5) | 0], 0.10 + R() * 0.14);
+        for (let i = 0; i < 26; i++) {
+          const x = cx + (R() * 2 - 1) * rw * 0.9, y = topY + L.cakeH * (0.08 + R() * 0.86), rr = L.s * (0.004 + R() * 0.008);
+          c.save(); c.translate(x, y); c.rotate(R() * TAU); star(c, 0, 0, rr);
+          c.fillStyle = ['#ffd166', '#f8f9fa', '#ff6b9d', '#4ecdc4', '#ffe8c2'][(R() * 5) | 0];
+          c.shadowColor = c.fillStyle; c.shadowBlur = 8; c.fill(); c.restore();
+        }
+        for (let i = 0; i < 46; i++)
+          glowDot(c, cx + (R() * 2 - 1) * rw * 0.92, topY + L.cakeH * R(), L.s * (0.002 + R() * 0.004), PALETTE[(R() * 8) | 0], 0.5 + R() * 0.5);
+      } else if (th.bodyFx === 'ruffle') {
+        // 天鹅裙褶: 垂直细密褶皱
+        for (let i = 0; i <= 26; i++) {
+          const x = cx - rw + i / 26 * rw * 2;
+          c.strokeStyle = i % 2 ? 'rgba(255,255,255,0.5)' : 'rgba(150,130,90,0.25)';
+          c.lineWidth = L.s * 0.006;
+          c.beginPath(); c.moveTo(x, topY); c.quadraticCurveTo(x + L.s * 0.006, topY + L.cakeH * 0.5, x, baseY); c.stroke();
+        }
+      } else if (th.bodyFx === 'choco') {
+        // 巧克力屑 + 甘那许纹理
+        for (let i = 0; i < 22; i++) {
+          const x = cx + (R() * 2 - 1) * rw * 0.92, y = topY + R() * L.cakeH;
+          c.strokeStyle = R() < 0.5 ? 'rgba(160,95,45,0.55)' : 'rgba(40,20,8,0.6)';
+          c.lineWidth = L.s * (0.004 + R() * 0.006);
+          c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + L.s * 0.01, y + L.s * 0.03, x + L.s * (R() * 0.02 - 0.01), y + L.s * 0.05); c.stroke();
+        }
+      } else if (th.bodyFx === 'petals') {
+        // 红玫瑰瓣
+        for (let i = 0; i < 16; i++) {
+          const x = cx + (R() * 2 - 1) * rw * 0.88, y = topY + L.cakeH * (0.1 + R() * 0.8);
+          c.save(); c.translate(x, y); c.rotate(R() * TAU);
+          const pg = c.createRadialGradient(0, 0, 1, 0, 0, L.s * 0.03);
+          pg.addColorStop(0, 'rgba(255,120,120,0.5)'); pg.addColorStop(1, 'rgba(110,10,20,0.55)');
+          c.fillStyle = pg; c.beginPath(); c.ellipse(0, 0, L.s * 0.03, L.s * 0.018, 0, 0, TAU); c.fill();
+          c.restore();
+        }
+      } else if (th.bodyFx === 'snow') {
+        for (let i = 0; i < 60; i++)
+          glowDot(c, cx + (R() * 2 - 1) * rw * 0.92, topY + R() * L.cakeH, L.s * (0.002 + R() * 0.005), '#ffffff', 0.25 + R() * 0.5);
+      } else if (th.bodyFx === 'crater') {
+        for (let i = 0; i < 10; i++) {
+          const x = cx + (R() * 2 - 1) * rw * 0.8, y = topY + L.cakeH * (0.15 + R() * 0.7), rr = L.s * (0.012 + R() * 0.02);
+          c.fillStyle = 'rgba(150,160,190,0.28)'; c.beginPath(); c.arc(x, y, rr, 0, TAU); c.fill();
+          c.fillStyle = 'rgba(255,255,255,0.22)'; c.beginPath(); c.arc(x - rr * 0.2, y - rr * 0.2, rr * 0.6, 0, TAU); c.fill();
+        }
       }
-      // 金色泼溅
-      for (let i = 0; i < 5; i++)
-        blob(c, cx + (R() * 2 - 1) * rw * 0.8, topY + L.cakeH * (0.15 + R() * 0.7),
-          L.s * (0.012 + R() * 0.02), '#ffd166', 0.28);
-      // 星星
-      for (let i = 0; i < 26; i++) {
-        const x = cx + (R() * 2 - 1) * rw * 0.9, y = topY + L.cakeH * (0.08 + R() * 0.86);
-        const r = L.s * (0.004 + R() * 0.008);
-        c.save(); c.translate(x, y); c.rotate(R() * TAU);
-        star(c, 0, 0, r);
-        c.fillStyle = ['#ffd166', '#f8f9fa', '#ff6b9d', '#4ecdc4', '#ffe8c2'][(R() * 5) | 0];
-        c.shadowColor = c.fillStyle; c.shadowBlur = 8; c.fill();
-        c.restore();
+      // 缎带围边
+      if (th.band) {
+        const by = baseY - L.cakeH * 0.20, bh = L.cakeH * 0.16;
+        c.fillStyle = th.band[0]; c.fillRect(cx - rw, by - bh / 2, rw * 2, bh);
+        c.fillStyle = th.band[1]; c.fillRect(cx - rw, by - bh / 2, rw * 2, bh * 0.22);
+        c.fillStyle = 'rgba(0,0,0,0.18)'; c.fillRect(cx - rw, by + bh * 0.28, rw * 2, bh * 0.14);
+        drawBow(c, cx, by, L.s * 0.032, th.band[1], th.band[0]);
       }
-      // 彩色小点
-      for (let i = 0; i < 46; i++)
-        glowDot(c, cx + (R() * 2 - 1) * rw * 0.92, topY + L.cakeH * R(),
-          L.s * (0.002 + R() * 0.004), PALETTE[(R() * 8) | 0], 0.5 + R() * 0.5);
-      // 底部压暗 + 两侧立体感
-      g = c.createLinearGradient(0, topY, 0, baseY);
-      g.addColorStop(0, 'rgba(2,4,14,0)'); g.addColorStop(1, 'rgba(2,4,14,0.5)');
-      c.fillStyle = g; c.fillRect(cx - rw, topY, rw * 2, L.cakeH + baseRy);
-      g = c.createLinearGradient(cx - rw, 0, cx + rw, 0);
-      g.addColorStop(0, 'rgba(2,4,14,0.55)'); g.addColorStop(0.2, 'rgba(2,4,14,0)');
-      g.addColorStop(0.8, 'rgba(2,4,14,0)'); g.addColorStop(1, 'rgba(2,4,14,0.55)');
-      c.fillStyle = g; c.fillRect(cx - rw, topY, rw * 2, L.cakeH + baseRy);
+      bodyShading(c);
       c.restore();
 
-      /* ---- 顶面 (奶白星系糖霜) ---- */
-      g = c.createLinearGradient(cx - rw, topY - topRy, cx + rw, topY + topRy);
-      g.addColorStop(0, '#e9f0ff'); g.addColorStop(0.5, '#a9bdf0'); g.addColorStop(1, '#5e7bd0');
+      // 顶面
+      drawRoundTop(c, th, R);
+
+      // 正面酷哥墨镜
+      if (th.deco === 'sunglasses')
+        drawSunglasses(c, cx, topY + L.cakeH * 0.26, rw * 0.95);
+    }
+
+    function drawRoundTop(c, th, R) {
+      const { cx, topY, rw, topRy } = L;
+      const s = L.s;
+      const g = c.createLinearGradient(cx - rw, topY - topRy, cx + rw, topY + topRy);
+      if (th.topFx === 'galaxy') { g.addColorStop(0, '#e9f0ff'); g.addColorStop(0.5, '#a9bdf0'); g.addColorStop(1, '#5e7bd0'); }
+      else if (th.topFx === 'choco') { g.addColorStop(0, '#8a5a30'); g.addColorStop(0.5, '#4a2812'); g.addColorStop(1, '#2c1608'); }
+      else if (th.topFx === 'billiards') { g.addColorStop(0, '#35a05e'); g.addColorStop(0.5, '#1f7a43'); g.addColorStop(1, '#0e4426'); }
+      else { g.addColorStop(0, '#ffffff'); g.addColorStop(0.5, th.top); g.addColorStop(1, shade(th.top, -18)); }
       c.fillStyle = g;
       c.beginPath(); c.ellipse(cx, topY, rw, topRy, 0, 0, TAU); c.fill();
 
       c.save();
       c.beginPath(); c.ellipse(cx, topY, rw * 0.97, topRy * 0.95, 0, 0, TAU); c.clip();
-      for (let i = 0; i < 8; i++)
-        blob(c, cx + (R() * 2 - 1) * rw * 0.8, topY + (R() * 2 - 1) * topRy * 0.6,
-          L.s * (0.015 + R() * 0.035), ['#f15bb5', '#9b5de5', '#22d3ee', '#ffd166', '#3f5efb'][(R() * 5) | 0], 0.16);
-      // 涡旋糖霜纹
-      for (let i = 0; i < 4; i++) {
-        c.strokeStyle = ['rgba(255,209,102,0.4)', 'rgba(241,91,181,0.3)', 'rgba(34,211,238,0.3)', 'rgba(255,255,255,0.3)'][i];
-        c.lineWidth = 1.5 + R() * 1.5;
-        c.beginPath();
-        c.ellipse(cx + (R() * 2 - 1) * rw * 0.25, topY + (R() * 2 - 1) * topRy * 0.3,
-          rw * (0.3 + R() * 0.55), topRy * (0.4 + R() * 0.6), R() * 0.8 - 0.4, 0, TAU);
-        c.stroke();
-      }
-      for (let i = 0; i < 12; i++) {
-        const x = cx + (R() * 2 - 1) * rw * 0.85, y = topY + (R() * 2 - 1) * topRy * 0.62;
-        c.save(); c.translate(x, y); c.rotate(R() * TAU);
-        star(c, 0, 0, L.s * (0.003 + R() * 0.006));
-        c.fillStyle = ['#ffd166', '#ff6b9d', '#4ecdc4', '#f8f9fa'][(R() * 4) | 0]; c.fill();
+
+      if (th.topFx === 'galaxy') {
+        for (let i = 0; i < 8; i++)
+          blob(c, cx + (R() * 2 - 1) * rw * 0.8, topY + (R() * 2 - 1) * topRy * 0.6, s * (0.015 + R() * 0.035),
+            ['#f15bb5', '#9b5de5', '#22d3ee', '#ffd166', '#3f5efb'][(R() * 5) | 0], 0.16);
+        for (let i = 0; i < 12; i++) {
+          const x = cx + (R() * 2 - 1) * rw * 0.85, y = topY + (R() * 2 - 1) * topRy * 0.62;
+          c.save(); c.translate(x, y); c.rotate(R() * TAU); star(c, 0, 0, s * (0.003 + R() * 0.006));
+          c.fillStyle = ['#ffd166', '#ff6b9d', '#4ecdc4', '#f8f9fa'][(R() * 4) | 0]; c.fill(); c.restore();
+        }
+        for (let i = 0; i < 50; i++)
+          glowDot(c, cx + (R() * 2 - 1) * rw * 0.9, topY + (R() * 2 - 1) * topRy * 0.68,
+            s * 0.0018 + R() * s * 0.002, PALETTE[(R() * 8) | 0], 0.55 + R() * 0.45);
+      } else if (th.topFx === 'fruits') {
+        // 鲜果铺满: 猕猴桃/橙子/草莓/蓝莓/薄荷叶
+        drawKiwi(c, cx - rw * 0.42, topY - topRy * 0.2, s * 0.034);
+        drawOrange(c, cx + rw * 0.4, topY - topRy * 0.25, s * 0.034);
+        drawStrawberry(c, cx - rw * 0.05, topY - topRy * 0.45, s * 0.042, 0.2);
+        drawStrawberry(c, cx + rw * 0.62, topY + topRy * 0.1, s * 0.036, -0.4);
+        drawKiwi(c, cx - rw * 0.6, topY + topRy * 0.15, s * 0.03);
+        drawOrange(c, cx + rw * 0.1, topY + topRy * 0.35, s * 0.032);
+        const bp = [[-0.2, -0.05], [0.22, 0.15], [-0.5, -0.35], [0.5, -0.4], [0.0, 0.15], [-0.15, 0.5], [0.45, 0.4], [-0.72, -0.05]];
+        for (const [u, v] of bp) drawBlueberry(c, cx + rw * u, topY + topRy * v, s * 0.016);
+        for (let i = 0; i < 6; i++) drawLeaf(c, cx + (R() * 2 - 1) * rw * 0.7, topY + (R() * 2 - 1) * topRy * 0.5, s * 0.02, R() * TAU);
+      } else if (th.topFx === 'choco') {
+        for (let i = 0; i < 8; i++) drawNut(c, cx + (R() * 2 - 1) * rw * 0.6, topY + (R() * 2 - 1) * topRy * 0.5, s * (0.014 + R() * 0.012), R() * TAU);
+        for (let i = 0; i < 7; i++) drawBlueberry(c, cx + (R() * 2 - 1) * rw * 0.55, topY + (R() * 2 - 1) * topRy * 0.5, s * (0.014 + R() * 0.008));
+        drawRaspberry(c, cx, topY - topRy * 0.2, s * 0.05);
+        c.strokeStyle = '#cfe8b0'; c.lineWidth = 2;
+        for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(cx - rw * 0.2 + i * s * 0.02, topY - topRy * 0.5); c.lineTo(cx - rw * 0.2 + i * s * 0.02, topY - topRy * 0.05); c.stroke(); }
+      } else if (th.topFx === 'billiards') {
+        const cols = [['#f4d35e', 1], ['#2a6fb0', 2], ['#e63946', 3], ['#6a4c93', 4], ['#f48436', 5], ['#2d8f5f', 6], ['#8c2634', 7], ['#1a1a1a', 8]];
+        const br = s * 0.022;
+        cols.forEach(([col, n], i) => {
+          const row = (i / 3) | 0, colI = i % 3;
+          drawPoolBall(c, cx + (colI - 1) * br * 2.15 + row * br * 1.08, topY - topRy * 0.15 + row * br * 1.9, br, col, n);
+        });
+        // 球杆
+        c.save(); c.translate(cx - rw * 0.5, topY + topRy * 0.45); c.rotate(-0.35);
+        const cg = c.createLinearGradient(0, 0, rw * 1.2, 0);
+        cg.addColorStop(0, '#e9c46a'); cg.addColorStop(0.85, '#8a5a2b'); cg.addColorStop(1, '#f4f1e8');
+        c.fillStyle = cg; roundRect(c, 0, -s * 0.005, rw * 1.25, s * 0.01, s * 0.005); c.fill();
         c.restore();
+      } else if (th.topFx === 'mahjong') {
+        drawTile(c, cx - rw * 0.3, topY - topRy * 0.2, s * 0.05, s * 0.066, '發', '#c1272d', -0.25);
+        drawTile(c, cx + rw * 0.05, topY - topRy * 0.4, s * 0.05, s * 0.066, '中', '#c1272d', 0.15);
+        drawTile(c, cx + rw * 0.36, topY + topRy * 0.05, s * 0.05, s * 0.066, '一萬', '#1f6f4a', 0.4);
+        for (const [u, v] of [[-0.55, 0.3], [0.5, 0.35], [-0.1, 0.45]]) {
+          const g = c.createRadialGradient(cx + rw * u - 3, topY + topRy * v - 3, 1, cx + rw * u, topY + topRy * v, s * 0.022);
+          g.addColorStop(0, '#fff3c4'); g.addColorStop(1, '#c9893a');
+          c.fillStyle = g; c.beginPath(); c.arc(cx + rw * u, topY + topRy * v, s * 0.022, 0, TAU); c.fill();
+          c.fillStyle = '#8a5e16'; c.font = `700 ${s * 0.02}px serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+          c.fillText('福', cx + rw * u, topY + topRy * v);
+        }
+      } else if (th.topFx === 'snow') {
+        // 雪顶 + 三峰
+        const peak = (x0, w0, h0, deep) => {
+          c.beginPath();
+          c.moveTo(x0 - w0 / 2, topY + topRy * 0.8);
+          c.lineTo(x0, topY + topRy * 0.8 - h0);
+          c.lineTo(x0 + w0 / 2, topY + topRy * 0.8); c.closePath();
+          c.fillStyle = deep; c.fill();
+          // 雪冠
+          c.beginPath();
+          c.moveTo(x0, topY + topRy * 0.8 - h0);
+          c.lineTo(x0 - w0 * 0.16, topY + topRy * 0.8 - h0 * 0.62);
+          c.lineTo(x0 + w0 * 0.05, topY + topRy * 0.8 - h0 * 0.72);
+          c.lineTo(x0 + w0 * 0.18, topY + topRy * 0.8 - h0 * 0.5);
+          c.closePath(); c.fillStyle = '#ffffff'; c.fill();
+        };
+        peak(cx - rw * 0.42, rw * 0.55, s * 0.11, '#2e7088');
+        peak(cx, rw * 0.72, s * 0.15, '#1e5568');
+        peak(cx + rw * 0.44, rw * 0.5, s * 0.095, '#3a8098');
+        for (let i = 0; i < 40; i++)
+          glowDot(c, cx + (R() * 2 - 1) * rw * 0.9, topY + (R() * 2 - 1) * topRy * 0.7, s * (0.002 + R() * 0.004), '#ffffff', 0.3 + R() * 0.5);
+      } else if (th.topFx === 'blueberry') {
+        // 蓝莓堆成小山
+        let k = 0;
+        for (let ring = 0; ring < 3; ring++)
+          for (let i = 0; i < 8 - ring * 2; i++) {
+            const a = i / (8 - ring * 2) * TAU + ring * 0.4;
+            drawBlueberry(c, cx + Math.cos(a) * rw * (0.18 + ring * 0.22), topY + Math.sin(a) * topRy * (0.2 + ring * 0.28) - ring * topRy * 0.12, s * 0.02);
+            k++;
+          }
+        drawBlueberry(c, cx, topY - topRy * 0.35, s * 0.022);
+      } else if (th.topFx === 'hearts') {
+        // 糖珠 + 小爱心 (大爱心在 deco 层用棍子立起)
+        for (let i = 0; i < 26; i++)
+          drawPearl(c, cx + (R() * 2 - 1) * rw * 0.8, topY + (R() * 2 - 1) * topRy * 0.6, s * (0.005 + R() * 0.006));
+      } else if (th.topFx === 'roses') {
+        for (let i = 0; i < 7; i++) {
+          const a = i / 7 * TAU + 0.3;
+          drawRose(c, cx + Math.cos(a) * rw * 0.55, topY + Math.sin(a) * topRy * 0.55, s * 0.026, '#f3b6c8', '#e58aa6', '#b94a6e', a);
+          drawLeaf(c, cx + Math.cos(a + 0.3) * rw * 0.68, topY + Math.sin(a + 0.3) * topRy * 0.66, s * 0.014, a);
+        }
+      } else if (th.topFx === 'moon') {
+        for (let i = 0; i < 8; i++) {
+          const x = cx + (R() * 2 - 1) * rw * 0.7, y = topY + (R() * 2 - 1) * topRy * 0.55, rr = s * (0.008 + R() * 0.014);
+          c.fillStyle = 'rgba(160,170,205,0.3)'; c.beginPath(); c.arc(x, y, rr, 0, TAU); c.fill();
+        }
+      } else if (th.topFx === 'cream' || th.topFx === 'smooth') {
+        blob(c, cx - rw * 0.2, topY - topRy * 0.25, rw * 0.45, '#ffffff', 0.3);
       }
-      for (let i = 0; i < 50; i++)
-        glowDot(c, cx + (R() * 2 - 1) * rw * 0.9, topY + (R() * 2 - 1) * topRy * 0.68,
-          L.s * 0.0018 + R() * L.s * 0.002, PALETTE[(R() * 8) | 0], 0.55 + R() * 0.45);
-      blob(c, cx - rw * 0.15, topY - topRy * 0.15, rw * 0.5, '#ffffff', 0.35);
       c.restore();
 
-      c.strokeStyle = 'rgba(255,255,255,0.55)'; c.lineWidth = 2;
+      // 奶油滴落
+      if (th.drip) {
+        c.fillStyle = th.drip;
+        for (let i = 0; i <= 12; i++) {
+          const a = Math.PI * (0.06 + i / 12 * 0.88);
+          const x = cx + Math.cos(a) * rw, y0 = topY + Math.sin(a) * topRy;
+          const len = s * (0.012 + (((i * 7) % 5) / 5) * 0.035), wd = s * 0.008;
+          c.beginPath(); c.ellipse(x, y0, wd * 1.4, wd, 0, 0, TAU); c.fill();
+          roundRect(c, x - wd, y0 - 1, wd * 2, len, wd); c.fill();
+        }
+        c.beginPath(); c.ellipse(cx, topY, rw * 0.99, topRy * 0.99, 0, 0, Math.PI); c.fill();
+      }
+      // 顶面边缘珍珠裱花 (奶油类)
+      if (['cream', 'roses', 'fruits', 'mahjong', 'beer', 'fish', 'tulip', 'crown', 'swan'].includes(th.topFx) || th.deco === 'crown' || th.deco === 'fish') {
+        const n = 22;
+        for (let i = 0; i <= n; i++) {
+          const a = i / n * TAU;
+          drawPearl(c, cx + Math.cos(a) * rw * 0.96, topY + Math.sin(a) * topRy * 0.94, s * 0.007);
+        }
+      }
+      c.strokeStyle = 'rgba(255,255,255,0.5)'; c.lineWidth = 2;
       c.beginPath(); c.ellipse(cx, topY, rw, topRy, 0, 0, TAU); c.stroke();
+    }
 
-      /* ---- 蜡烛 (薰衣草紫) — 按配置数量环形布局 ---- */
-      const cbw = L.candleW;
+    // 颜色明暗微调
+    function shade(hex, amt) {
+      const n = parseInt(hex.slice(1), 16);
+      let r = n >> 16 & 255, g = n >> 8 & 255, b = n & 255;
+      r = Math.max(0, Math.min(255, r + amt)); g = Math.max(0, Math.min(255, g + amt));
+      b = Math.max(0, Math.min(255, b + amt));
+      return `rgb(${r},${g},${b})`;
+    }
+
+    /* ---- 心形蛋糕 ---- */
+    function drawHeartCake(c, th, R) {
+      const f = heartFace(), s = L.s;
+      // 厚度底面
+      c.save();
+      heartPath(c, f.x, f.y + s * 0.022, f.w, f.h);
+      const dg = c.createLinearGradient(0, f.y, 0, f.y + f.h * 0.6);
+      dg.addColorStop(0, th.body[3]); dg.addColorStop(1, th.body[0]);
+      c.fillStyle = dg; c.fill();
+      c.restore();
+      // 正面心形糕体
+      c.save();
+      heartPath(c, f.x, f.y, f.w, f.h); c.clip();
+      c.fillStyle = bodyGradient(c, th, f.x - f.w / 2, f.x + f.w / 2);
+      c.fillRect(f.x - f.w / 2, f.y - f.h * 0.6, f.w, f.h);
+      if (th.bodyFx === 'petals') {
+        for (let i = 0; i < 18; i++) {
+          c.save();
+          c.translate(f.x + (R() * 2 - 1) * f.w * 0.36, f.y + (R() * 2 - 1) * f.h * 0.34);
+          c.rotate(R() * TAU);
+          const pg = c.createRadialGradient(0, 0, 1, 0, 0, s * 0.03);
+          pg.addColorStop(0, 'rgba(255,120,120,0.45)'); pg.addColorStop(1, 'rgba(110,10,20,0.5)');
+          c.fillStyle = pg; c.beginPath(); c.ellipse(0, 0, s * 0.03, s * 0.018, 0, 0, TAU); c.fill();
+          c.restore();
+        }
+      }
+      // 侧面/底部压暗
+      let g = c.createLinearGradient(f.x - f.w / 2, 0, f.x + f.w / 2, 0);
+      g.addColorStop(0, 'rgba(20,4,10,0.4)'); g.addColorStop(0.22, 'rgba(0,0,0,0)');
+      g.addColorStop(0.78, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(20,4,10,0.4)');
+      c.fillStyle = g; c.fillRect(f.x - f.w / 2, f.y - f.h, f.w, f.h * 2);
+      g = c.createLinearGradient(0, f.y - f.h * 0.4, 0, f.y + f.h * 0.5);
+      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(20,4,10,0.35)');
+      c.fillStyle = g; c.fillRect(f.x - f.w / 2, f.y - f.h, f.w, f.h * 2);
+      // 粉色心形正面贴小爱心
+      if (th.id === 'pinkheart') {
+        for (const [u, v, sc] of [[-0.24, 0.06, 0.03], [0.26, 0.18, 0.024], [0.05, 0.3, 0.02]])
+          drawPuffHeart(c, f.x + f.w * u, f.y + f.h * v, s * sc, '#ffd0e2', '#e58aae');
+      }
+      c.restore();
+      // 顶部糖霜心形层 (略小略上移, 形成 3D 厚度)
+      c.save();
+      c.shadowColor = 'rgba(0,0,0,0.18)'; c.shadowBlur = s * 0.02;
+      heartPath(c, f.x, f.y - s * 0.014, f.w * 0.95, f.h * 0.92);
+      const tg = c.createLinearGradient(0, f.y - f.h * 0.5, 0, f.y);
+      tg.addColorStop(0, '#ffffff'); tg.addColorStop(0.55, th.top); tg.addColorStop(1, shade(th.top, -14));
+      c.fillStyle = tg; c.fill();
+      c.shadowBlur = 0;
+      heartPath(c, f.x, f.y - s * 0.014, f.w * 0.95, f.h * 0.92); c.clip();
+      // 顶部糖珠
+      for (let i = 0; i < 30; i++)
+        drawPearl(c, f.x + (R() * 2 - 1) * f.w * 0.34, f.y - s * 0.014 - f.h * 0.32 + (R() * 2 - 1) * f.h * 0.18, s * (0.005 + R() * 0.005));
+      c.restore();
+      // 心形边缘描光
+      heartPath(c, f.x, f.y - s * 0.014, f.w * 0.95, f.h * 0.92);
+      c.strokeStyle = 'rgba(255,255,255,0.55)'; c.lineWidth = 2; c.stroke();
+    }
+
+    /* ---- 顶部立体装饰 ---- */
+    function drawDeco(c, th, R) {
+      const { cx, topY, rw, topRy } = L, s = L.s;
+      const ty = topY;
+      const heart = th.shape === 'heart';
+      const f = heart ? heartFace() : null;
+      // 心形蛋糕的装饰锚点在心形糖霜上部
+      const hx = heart ? f.x : cx;
+      const hy = heart ? f.y - f.h * 0.10 : ty;
+      switch (th.deco) {
+        case 'hearts': {
+          // 三支爱心插牌
+          const spX = heart ? f.w * 0.16 : rw * 0.28;
+          const ps = [[-spX, 0, '#ff9ec2'], [0, heart ? -f.h * 0.16 : -topRy * 0.5, '#ff7fab'], [spX, heart ? -f.h * 0.02 : -topRy * 0.1, '#ffc2d8']];
+          for (const [dx, dy, col] of ps) {
+            c.strokeStyle = 'rgba(255,255,255,0.75)'; c.lineWidth = 2;
+            c.beginPath(); c.moveTo(hx + dx, hy + dy + s * 0.02); c.lineTo(hx + dx, hy + dy - s * 0.05); c.stroke();
+            drawPuffHeart(c, hx + dx, hy + dy - s * 0.075, s * 0.045, col, '#d15a88');
+          }
+          break;
+        }
+        case 'roseGiant':
+          // 大朵立体红玫瑰
+          if (heart) {
+            drawLeaf(c, hx - f.w * 0.16, hy + f.h * 0.1, s * 0.05, -0.6);
+            drawLeaf(c, hx + f.w * 0.18, hy + f.h * 0.12, s * 0.044, 0.5);
+            drawRose(c, hx, hy + f.h * 0.02, s * 0.1, '#e0404f', '#b01624', '#6e0a14', 0.3);
+          } else {
+            drawLeaf(c, cx - rw * 0.2, ty + topRy * 0.1, s * 0.045, -0.6);
+            drawLeaf(c, cx + rw * 0.22, ty + topRy * 0.15, s * 0.04, 0.5);
+            drawRose(c, cx, ty - topRy * 0.15, s * 0.085, '#e0404f', '#b01624', '#6e0a14', 0.3);
+          }
+          break;
+        case 'bow':
+          if (heart) drawBow(c, hx, f.y + f.h * 0.02, s * 0.06, '#f3a8c4', '#d57ba0');
+          else drawBow(c, cx, ty - topRy * 0.1, s * 0.055, th.id === 'redrose' ? '#c1121f' : '#f3a8c4', th.id === 'redrose' ? '#7a0c18' : '#d57ba0');
+          break;
+        case 'crown':
+          drawCrown(c, cx, ty - topRy * 0.55, rw * 0.78, s * 0.052);
+          for (let i = 0; i < 12; i++)
+            drawPearl(c, cx + (R() * 2 - 1) * rw * 0.7, ty + (R() * 2 - 1) * topRy * 0.6, s * 0.008);
+          break;
+        case 'tulips': {
+          const cols = [['#ff9ebb', '#e5739e'], ['#ffc2d4', '#f090b4'], ['#f7d4e4', '#ee9ebd'], ['#e886a8', '#cf5d84'], ['#ffb3cf', '#ec7fa4']];
+          cols.forEach(([co, de], i) =>
+            drawTulip(c, cx + (i - 2) * rw * 0.24, ty + topRy * (0.5 - Math.abs(i - 2) * 0.1), s * 0.16, co, de));
+          break;
+        }
+        case 'bottles': {
+          const glassA = [['#7a5210', '#d9a83e', '#f5d88a'], ['#214d2e', '#3f9b5c', '#9be0b0'], ['#8a3a16', '#e07a3a', '#ffb478'], ['#214d2e', '#3f9b5c', '#9be0b0']];
+          const xs = [-0.42, -0.14, 0.14, 0.42];
+          xs.forEach((u, i) => drawBottle(c, cx + rw * u, ty + topRy * 0.55, s * 0.2, glassA[i], ['#c1272d', '#1f6f4a'][i % 2]));
+          // 冰块
+          c.fillStyle = 'rgba(220,240,255,0.75)';
+          for (const [u, v] of [[-0.55, 0.3], [0.55, 0.2], [0, 0.6]]) {
+            c.save(); c.translate(cx + rw * u, ty + topRy * v); c.rotate(R() * TAU);
+            c.fillRect(-s * 0.012, -s * 0.012, s * 0.024, s * 0.024); c.restore();
+          }
+          break;
+        }
+        case 'fish': {
+          // 红日 + 锦鲤
+          const sg = c.createRadialGradient(cx, ty - topRy * 0.7, 2, cx, ty - topRy * 0.7, s * 0.05);
+          sg.addColorStop(0, '#ff8a5c'); sg.addColorStop(1, '#d62839');
+          c.fillStyle = sg; c.beginPath(); c.arc(cx, ty - topRy * 0.7, s * 0.04, 0, TAU); c.fill();
+          drawKoi(c, cx, ty + topRy * 0.1, s * 0.16, -0.15);
+          c.strokeStyle = 'rgba(255,209,102,0.55)'; c.lineWidth = 2;
+          for (let i = -1; i <= 1; i++) {
+            c.beginPath(); c.moveTo(cx - rw * 0.7, ty + topRy * (0.5 + i * 0.25));
+            c.quadraticCurveTo(cx, ty + topRy * (0.2 + i * 0.25), cx + rw * 0.7, ty + topRy * (0.5 + i * 0.25)); c.stroke();
+          }
+          break;
+        }
+        case 'swan':
+          drawSwan(c, cx, ty + topRy * 0.2, s * 0.17);
+          drawRose(c, cx - rw * 0.42, ty + topRy * 0.5, s * 0.03, '#f3e9dc', '#e0cdae', '#c0a880', 0.4);
+          drawRose(c, cx + rw * 0.42, ty + topRy * 0.5, s * 0.03, '#f3e9dc', '#e0cdae', '#c0a880', -0.3);
+          break;
+        case 'moonheart':
+          drawPuffHeart(c, cx + rw * 0.28, ty - topRy * 0.3, s * 0.04, '#ff5d73', '#c1272d');
+          c.fillStyle = 'rgba(255,255,255,0.92)'; c.font = `600 ${s * 0.022}px "PingFang SC",cursive`;
+          c.textAlign = 'center';
+          c.fillText('love you', cx - rw * 0.18, ty + topRy * 0.35);
+          break;
+      }
+    }
+
+    function drawCandles(c, th) {
+      const { cx } = L;
+      const cbw = L.candleW, cd = th.candle;
       for (const cp of candlePositions) {
         const ecx = cx + cp.dx, ebt = L.candleTop + cp.dy, ebb = L.candleBase + cp.dy;
-        g = c.createLinearGradient(ecx - cbw, 0, ecx + cbw, 0);
-        g.addColorStop(0, '#b39ddb'); g.addColorStop(0.4, '#e8d9f8'); g.addColorStop(1, '#9575cd');
+        const g = c.createLinearGradient(ecx - cbw, 0, ecx + cbw, 0);
+        g.addColorStop(0, cd[2]); g.addColorStop(0.4, cd[1]); g.addColorStop(1, cd[0]);
         c.fillStyle = g;
         roundRect(c, ecx - cbw / 2, ebt, cbw, ebb - ebt, cbw * 0.3); c.fill();
-        blob(c, ecx - cbw * 0.5, ebt + cbw * 1.2, cbw * 0.5, '#f3e8fb', 0.9);
-        blob(c, ecx + cbw * 0.45, ebt + cbw * 2.1, cbw * 0.45, '#f3e8fb', 0.85);
+        blob(c, ecx - cbw * 0.5, ebt + cbw * 1.2, cbw * 0.5, cd[1], 0.9);
+        blob(c, ecx + cbw * 0.45, ebt + cbw * 2.1, cbw * 0.45, cd[1], 0.85);
         c.strokeStyle = '#3a2b2b'; c.lineWidth = 2; c.lineCap = 'round';
         c.beginPath(); c.moveTo(ecx, ebt + 2); c.quadraticCurveTo(ecx + 1, ebt - 4, ecx + 2, ebt - 7); c.stroke();
       }
@@ -884,15 +1780,19 @@
       }));
     }
     function initFloaters() {
+      const th = getTheme();
+      const pal = th.palette;
       const n = Math.round(Math.min(W, H) * 0.16);
       floaters = Array.from({ length: n }, () => ({
+        kind: th.flo,
         x: rnd(W), y: rnd(H), r: Math.pow(Math.random(), 2) * 7 + 1,
-        c: PALETTE[(Math.random() * PALETTE.length) | 0],
+        c: pal[(Math.random() * pal.length) | 0],
         a: rnd(0.4, 0.95), ph: rnd(TAU), sp: rnd(0.4, 1.4),
-        vy: rnd(6, 22), vx: rnd(-8, 8)
+        vy: rnd(6, 22), vx: rnd(-8, 8), rot: rnd(TAU), vr: rnd(-1, 1)
       }));
     }
     function initOrbits() {
+      const pal = getTheme().palette;
       const mk = (rxM, ryM, rot, cyF, dir, sp, n) => ({
         rx: L.rw * rxM, ry: L.rw * ryM, rot, dir, sp,
         cy: L.topY + L.cakeH * cyF,
@@ -903,7 +1803,7 @@
             off: rnd(TAU),
             sp: rnd(0.85, 1.18),               // 每颗粒子速度略有差异
             r: hero ? rnd(2.4, 3.4) : rnd(0.9, 2.6),
-            c: PALETTE[(Math.random() * PALETTE.length) | 0],
+            c: pal[(Math.random() * pal.length) | 0],
             a: hero ? 1 : rnd(0.5, 0.95),
             tail: hero ? (8 + rnd(6)) | 0 : (4 + rnd(5)) | 0,
             tw: rnd(1.2, 4), ph2: rnd(TAU),    // 闪烁
@@ -1396,6 +2296,7 @@
       // 漂浮粒子
       for (const f of floaters) {
         f.x += f.vx * dt; f.y -= f.vy * dt;
+        if (f.vr) f.rot += f.vr * dt;
         if (f.y < -30) { f.y = H + 30; f.x = rnd(W); }
         if (f.x < -30) f.x = W + 30;
         if (f.x > W + 30) f.x = -30;
@@ -1578,28 +2479,59 @@
       return txt ? [txt] : [];
     }
 
+    // 各主题刻字配色: 高光/中间/暗部/辉光
+    const ENGRAVE = {
+      gold:  { hi: [255, 236, 200], mid: [255, 209, 102], lo: [226, 165, 74], sh: [255, 209, 102] },
+      white: { hi: [255, 255, 255], mid: [246, 246, 252], lo: [205, 208, 222], sh: [255, 255, 255] },
+      rose:  { hi: [255, 214, 228], mid: [224, 112, 150], lo: [160, 52, 92], sh: [255, 150, 180] },
+      red:   { hi: [255, 180, 180], mid: [214, 48, 60], lo: [132, 12, 24], sh: [255, 96, 96] },
+      champ: { hi: [248, 236, 206], mid: [176, 140, 90], lo: [112, 84, 46], sh: [224, 196, 140] },
+      leaf:  { hi: [224, 242, 204], mid: [96, 126, 72], lo: [54, 78, 38], sh: [150, 204, 120] },
+      berry: { hi: [206, 224, 255], mid: [64, 96, 150], lo: [28, 46, 86], sh: [120, 162, 232] },
+      navy:  { hi: [168, 186, 232], mid: [52, 64, 110], lo: [22, 30, 58], sh: [120, 142, 212] },
+      dark:  { hi: [158, 116, 74], mid: [92, 60, 30], lo: [42, 26, 10], sh: [128, 86, 48] }
+    };
+    const rgba = (p, a) => `rgba(${p[0]},${p[1]},${p[2]},${a})`;
+
     function drawCakeText(t) {
       const { cx, topY, baseY, rw, baseRy } = L;
+      const th = getTheme(), ec = ENGRAVE[th.engrave] || ENGRAVE.gold;
       ctx.save();
-      // 裁剪到蛋糕侧身轮廓
-      ctx.beginPath();
-      ctx.moveTo(cx + rw, topY);
-      ctx.lineTo(cx + rw, baseY);
-      ctx.ellipse(cx, baseY, rw, baseRy, 0, 0, Math.PI, false);
-      ctx.lineTo(cx - rw, topY);
-      ctx.closePath();
-      ctx.clip();
 
       const lines = engraveLines();
       const maxLen = Math.max(1, ...lines.map(l => l.length));
-      // 单行: 大字号垂直居中; 双行: 字号收窄自适应, 上下排开 (上名字/下生日快乐)
-      let fs, ys;
-      if (lines.length >= 2) {
-        fs = Math.min(rw * 0.27, (rw * 1.62) / (maxLen * 1.02));
-        ys = [topY + L.cakeH * 0.40, topY + L.cakeH * 0.67];
+      let fs, ys, cc, hh;   // 曲率半径 (横向), 文字中心 x
+
+      if (th.shape === 'heart') {
+        // 裁剪到心形轮廓, 字号与位置按心形几何排布
+        const f = heartFace();
+        heartPath(ctx, f.x, f.y - L.s * 0.014, f.w * 0.95, f.h * 0.92);
+        ctx.clip();
+        cc = f.x; hh = f.w / 2;
+        if (lines.length >= 2) {
+          fs = Math.min(f.w * 0.145, (f.w * 0.82) / (maxLen * 1.02));
+          ys = [f.y - f.h * 0.03, f.y + f.h * 0.22];
+        } else {
+          fs = f.w * 0.15;
+          ys = [f.y + f.h * 0.11];
+        }
       } else {
-        fs = rw * 0.32;
-        ys = [topY + L.cakeH * 0.56];
+        // 裁剪到圆柱侧身轮廓
+        ctx.beginPath();
+        ctx.moveTo(cx + rw, topY);
+        ctx.lineTo(cx + rw, baseY);
+        ctx.ellipse(cx, baseY, rw, baseRy, 0, 0, Math.PI, false);
+        ctx.lineTo(cx - rw, topY);
+        ctx.closePath();
+        ctx.clip();
+        cc = cx; hh = rw;
+        if (lines.length >= 2) {
+          fs = Math.min(rw * 0.27, (rw * 1.62) / (maxLen * 1.02));
+          ys = [topY + L.cakeH * 0.40, topY + L.cakeH * 0.67];
+        } else {
+          fs = rw * 0.32;
+          ys = [topY + L.cakeH * 0.56];
+        }
       }
       ctx.font = `700 ${fs}px "PingFang SC","Microsoft YaHei",sans-serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1607,33 +2539,35 @@
       lines.forEach((txt, li) => {
         const y = ys[li];
         for (let i = 0; i < txt.length; i++) {
-          const x = cx + (i - (txt.length - 1) / 2) * step;
-          const u = Math.min(1, Math.abs((x - cx) / rw));
-          const surf = Math.sqrt(Math.max(0, 1 - u * u));   // 柱面光照: 中亮边暗
-          const pulse = 0.5 + 0.5 * Math.sin(t * 0.62 - i * 0.55 - li * 1.3);   // 逐字+逐行相位波浪
-          const a = (0.20 + 0.45 * pulse) * (0.3 + 0.7 * surf);
+          const x = cc + (i - (txt.length - 1) / 2) * step;
+          const u = Math.min(1, Math.abs((x - cc) / hh));
+          const surf = Math.sqrt(Math.max(0, 1 - u * u));   // 弧面光照: 中亮边暗
+          const pulse = 0.5 + 0.5 * Math.sin(t * 0.62 - i * 0.55 - li * 1.3);
+          const a = (0.22 + 0.5 * pulse) * (0.3 + 0.7 * surf);
           ctx.save();
           ctx.translate(x, y);
-          ctx.scale(0.6 + 0.4 * surf, 1);                  // 边缘横向收窄, 像绕在圆柱上
+          ctx.scale(0.6 + 0.4 * surf, 1);
           const g = ctx.createLinearGradient(0, -fs * 0.6, 0, fs * 0.6);
-          g.addColorStop(0, `rgba(255,236,200,${a})`);
-          g.addColorStop(0.55, `rgba(255,209,102,${a})`);
-          g.addColorStop(1, `rgba(226,165,74,${a * 0.85})`);
+          g.addColorStop(0, rgba(ec.hi, a));
+          g.addColorStop(0.55, rgba(ec.mid, a));
+          g.addColorStop(1, rgba(ec.lo, a * 0.85));
           ctx.fillStyle = g;
-          ctx.shadowColor = `rgba(255,209,102,${0.55 * a})`;
+          ctx.shadowColor = rgba(ec.sh, 0.55 * a);
           ctx.shadowBlur = 5 + 9 * pulse;
           ctx.fillText(txt[i], 0, 0);
           ctx.restore();
         }
       });
-      // 表面光影压暗 (两侧+底部): 让字像"印"在蛋糕体上而非浮着
-      let g = ctx.createLinearGradient(cx - rw, 0, cx + rw, 0);
-      g.addColorStop(0, 'rgba(2,4,14,0.55)'); g.addColorStop(0.22, 'rgba(2,4,14,0)');
-      g.addColorStop(0.78, 'rgba(2,4,14,0)'); g.addColorStop(1, 'rgba(2,4,14,0.55)');
-      ctx.fillStyle = g; ctx.fillRect(cx - rw, topY, rw * 2, L.cakeH + baseRy);
-      g = ctx.createLinearGradient(0, topY, 0, baseY + baseRy);
-      g.addColorStop(0, 'rgba(2,4,14,0)'); g.addColorStop(1, 'rgba(2,4,14,0.5)');
-      ctx.fillStyle = g; ctx.fillRect(cx - rw, topY, rw * 2, L.cakeH + baseRy);
+      if (th.shape !== 'heart') {
+        // 圆柱表面光影压暗: 让字像"印"在蛋糕体上
+        let g = ctx.createLinearGradient(cx - rw, 0, cx + rw, 0);
+        g.addColorStop(0, 'rgba(2,4,14,0.55)'); g.addColorStop(0.22, 'rgba(2,4,14,0)');
+        g.addColorStop(0.78, 'rgba(2,4,14,0)'); g.addColorStop(1, 'rgba(2,4,14,0.55)');
+        ctx.fillStyle = g; ctx.fillRect(cx - rw, topY, rw * 2, L.cakeH + baseRy);
+        g = ctx.createLinearGradient(0, topY, 0, baseY + baseRy);
+        g.addColorStop(0, 'rgba(2,4,14,0)'); g.addColorStop(1, 'rgba(2,4,14,0.5)');
+        ctx.fillStyle = g; ctx.fillRect(cx - rw, topY, rw * 2, L.cakeH + baseRy);
+      }
       ctx.restore();
     }
     function drawFlame(t) {
@@ -1718,8 +2652,8 @@
       ctx.clearRect(0, 0, W, H);
       ctx.drawImage(bgCv, 0, 0, W, H);
 
-      // 闪烁星星
-      for (const s of stars) {
+      // 闪烁星星 (仅星空类主题)
+      if (getTheme().stars) for (const s of stars) {
         const a = 0.22 + 0.78 * (0.5 + 0.5 * Math.sin(t * s.sp + s.ph));
         ctx.globalAlpha = a; ctx.fillStyle = '#dfe8ff';
         ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, TAU); ctx.fill();
@@ -1732,7 +2666,7 @@
       ctx.globalAlpha = 1;
 
       // 流星
-      if (shoot) {
+      if (shoot && getTheme().stars) {
         const k = 1 - shoot.age / shoot.life;
         const x2 = shoot.x - shoot.vx * 0.18, y2 = shoot.y - shoot.vy * 0.18;
         const g = ctx.createLinearGradient(shoot.x, shoot.y, x2, y2);
@@ -1743,10 +2677,12 @@
         glowDot(ctx, shoot.x, shoot.y, 1.6, '#ffffff', k);
       }
 
-      // 远景星环 (蛋糕后方)
+      // 远景星环 (蛋糕后方, 仅星河主题)
+      if (getTheme().orbits) {
       ctx.save(); ctx.translate(px * 6, py * 4);
       drawOrbits(t, true);
       ctx.restore();
+      }
 
       // 蛋糕 + 烛光 + 火焰
       ctx.save(); ctx.translate(px * 10, py * 7);
@@ -1760,17 +2696,35 @@
       }
       ctx.restore();
 
-      // 近景星环 (蛋糕前方)
+      // 近景星环 (蛋糕前方, 仅星河主题)
+      if (getTheme().orbits) {
       ctx.save(); ctx.translate(px * 14, py * 10);
       drawOrbits(t, false);
       ctx.restore();
+      }
 
-      // 漂浮彩色光点
+      // 漂浮粒子: 光点 / 花瓣 / 雪花 / 散景
       ctx.save(); ctx.translate(px * 8, py * 6);
       for (const f of floaters) {
         const tw = 0.55 + 0.45 * Math.sin(t * f.sp + f.ph);
-        glowDot(ctx, f.x, f.y, f.r, f.c, f.a * tw);
+        if (f.kind === 'petal') {
+          ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.rot); ctx.globalAlpha = f.a * tw;
+          ctx.fillStyle = f.c;
+          ctx.beginPath(); ctx.ellipse(0, 0, f.r * 1.6, f.r * 0.9, 0, 0, TAU); ctx.fill();
+          ctx.restore();
+        } else if (f.kind === 'snow') {
+          ctx.globalAlpha = Math.min(1, f.a * tw);
+          ctx.fillStyle = f.c;
+          ctx.beginPath(); ctx.arc(f.x, f.y, f.r * 0.75, 0, TAU); ctx.fill();
+        } else if (f.kind === 'bokeh') {
+          ctx.globalAlpha = 0.12 + f.a * 0.25 * tw;
+          ctx.strokeStyle = f.c; ctx.lineWidth = 1.2;
+          ctx.beginPath(); ctx.arc(f.x, f.y, f.r * 2.4, 0, TAU); ctx.stroke();
+        } else {
+          glowDot(ctx, f.x, f.y, f.r, f.c, f.a * tw);
+        }
       }
+      ctx.globalAlpha = 1;
       ctx.restore();
 
       // 烟雾
@@ -1892,6 +2846,7 @@
       toName: '',         // 留空时自动用 "To {性别} {姓名}"
       gender: '兄弟',
       birthday: '',       // YYYY-MM-DD
+      theme: 'starry',    // 蛋糕+场景模板
       candles: 1,         // 蜡烛数量
       engrave: '安巍生日快乐',
       blessings: '生日快乐, 平安喜乐, 前程似锦, 万事胜意, 得偿所愿, 健康快乐, 友谊长存, 未来可期, 好运连连, 笑口常开, 岁岁常欢愉, 年年皆胜意, MC小安, MC安子, MC安巍, 所求皆如愿, 所行化坦途, 日日是好日, 被世界温柔以待, 眼里有光 心里有海, 好运正在派送, 星辰大海为你闪耀, 又长大一岁啦, 生日快乐万事胜意, 愿你一生努力一生被爱',
@@ -1970,6 +2925,14 @@
         bgMusicEl.removeAttribute('src');
         bgMusicEl.load();
       }
+
+      // 场景/蛋糕模板变化: 重新布局并预渲染所有静态层 (启动时 W=0, resize 时会统一渲染)
+      if (W > 0) {
+        layout(); renderBG();
+        recalcCandles(cfg.candles);
+        renderCake();
+        initStars(); initFloaters(); initOrbits();
+      }
     }
 
     /* 蜡烛位置数组 (多蜡烛布局) */
@@ -1977,6 +2940,15 @@
     function recalcCandles(n) {
       candlePositions = [];
       n = Math.max(1, Math.min(12, n || 1));
+      if (getTheme().shape === 'heart') {
+        // 心形: 蜡烛沿上半弧排布在心口凹处与两瓣之间
+        if (n === 1) candlePositions.push({ dx: 0, dy: -L.cakeH * 0.06 });
+        else for (let i = 0; i < n; i++) {
+          const a = (i / n) * Math.PI * 1.6 - Math.PI * 0.8;
+          candlePositions.push({ dx: Math.sin(a) * L.rw * 0.34, dy: Math.cos(a) * L.cakeH * 0.12 - L.cakeH * 0.05 });
+        }
+        return;
+      }
       if (n === 1) {
         candlePositions.push({ dx: 0, dy: 0 });
       } else {
@@ -2045,6 +3017,38 @@
     // 点击面板以外区域: 无改动直接关闭, 有改动弹确认
     cfgMask.addEventListener('click', requestClosePanel);
 
+    /* ---- 主题模板卡片 ---- */
+    function buildThemeGrid() {
+      const grid = document.getElementById('themeGrid');
+      grid.innerHTML = '';
+      for (const t of THEMES) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'theme-card';
+        b.dataset.theme = t.id;
+        b.innerHTML = `<span class="tc-emoji">${t.emoji}</span><span class="tc-name">${t.name}</span><span class="tc-tag">${t.tag}</span>`;
+        b.addEventListener('click', () => previewTheme(t.id));
+        grid.appendChild(b);
+      }
+    }
+    function syncThemeCards() {
+      const cur = draft ? draft.theme : cfg.theme;
+      document.querySelectorAll('.theme-card').forEach(el =>
+        el.classList.toggle('active', el.dataset.theme === cur));
+    }
+    // 点卡片: 写入草稿并实时预览 (尚未保存, 放弃时恢复)
+    function previewTheme(id) {
+      if (!draft || draft.theme === id) return;
+      draft.theme = id;
+      cfg.theme = id;
+      layout(); renderBG();
+      recalcCandles(cfg.candles);
+      renderCake();
+      initStars(); initFloaters(); initOrbits();
+      syncThemeCards();
+    }
+    buildThemeGrid();
+
     function requestClosePanel() {
       if (!isDirty()) { closePanel(); return; }
       cfgConfirm.classList.add('show');
@@ -2060,6 +3064,7 @@
       document.getElementById('cfgBlessings').value = draft.blessings || '';
       document.getElementById('cfgSubtitle').value = draft.subtitle || '';
       document.getElementById('musicName').textContent = draft.music ? '🎵 当前：' + (draft.musicName || '自定义音乐') : '';
+      syncThemeCards();
       renderPhotoGrid();
     }
 
@@ -2091,7 +3096,14 @@
 
     // 确认弹窗三个选择
     document.getElementById('cfSave').addEventListener('click', commitSave);
-    document.getElementById('cfDiscard').addEventListener('click', closePanel);  // 放弃修改: 草稿直接丢弃
+    document.getElementById('cfDiscard').addEventListener('click', () => {
+      // 放弃修改: 恢复实时预览掉的模板并重渲染
+      if (draft && draft.theme !== undefined && cfg.theme !== draft.theme) {
+        cfg.theme = draft.theme;
+        applyCfg();
+      }
+      closePanel();
+    });
     document.getElementById('cfCancel').addEventListener('click', () => cfgConfirm.classList.remove('show'));
 
     document.getElementById('cfgReset').addEventListener('click', () => {
