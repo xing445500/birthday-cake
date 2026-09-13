@@ -157,6 +157,14 @@
       font-family: "PingFang SC", "Microsoft YaHei", sans-serif
     }
 
+    .msg .m4 {
+      margin-top: 10px;
+      font-size: clamp(11px, 1.4vw, 14px);
+      color: #ffd166;
+      letter-spacing: .25em;
+      opacity: .9;
+    }
+
     /* 按钮 */
     button {
       position: fixed;
@@ -198,25 +206,66 @@
       transform: translate(-50%, -2px)
     }
 
+    /* 顶部寿星问候条 */
+    #topGreeting {
+      position: fixed;
+      top: calc(20px + env(safe-area-inset-top));
+      left: 50%;
+      transform: translateX(-50%) translateY(-8px);
+      z-index: 5;
+      color: #ead9a5;
+      font: 600 14px/1.6 "PingFang SC", "Microsoft YaHei", sans-serif;
+      letter-spacing: .18em;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .8s, transform .8s;
+      text-shadow: 0 0 16px rgba(255, 209, 102, .45);
+      text-align: center;
+    }
+    #topGreeting.show { opacity: .92; transform: translateX(-50%) translateY(0); }
+    #topGreeting .g-name { font-size: 16px; color: #ffd166; }
+    #topGreeting .g-date {
+      display: block;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: .3em;
+      color: #8fa0c8;
+      margin-top: 2px;
+    }
+
     /* ═══ 配置面板 ═══ */
     #cfgBtn {
       position: fixed;
-      right: 18px;
-      bottom: calc(18px + env(safe-area-inset-bottom));
-      z-index: 10;
-      width: 44px;
-      height: 44px;
+      right: 14px;
+      bottom: calc(14px + env(safe-area-inset-bottom));
+      z-index: 4;                 /* 低调: 层级低, 默认半透明, 不抢画面 */
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
       padding: 0;
-      font-size: 20px;
+      font-size: 15px;
+      opacity: .28;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: .35s;
+      transition: opacity .35s, transform .35s, box-shadow .35s;
     }
-    #cfgBtn:hover { transform: rotate(90deg); }
-    #cfgBtn.open { transform: rotate(135deg); }
+    #cfgBtn:hover { opacity: 1; transform: rotate(90deg); }
+    #cfgBtn.open { opacity: 1; transform: rotate(135deg); z-index: 12; }
+
+    /* 点击面板外区域的透明遮罩 */
+    #cfgMask {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      background: rgba(2, 4, 12, .35);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .35s;
+    }
+    #cfgMask.show { opacity: 1; pointer-events: auto; }
 
     #cfgPanel {
       position: fixed;
@@ -227,8 +276,8 @@
       height: 100%;
       z-index: 11;
       background: rgba(8, 12, 28, .92);
-      backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
       border-left: 1px solid rgba(255, 209, 102, .2);
       transform: translateX(100%);
       transition: transform .4s cubic-bezier(.22, 1, .36, 1);
@@ -330,6 +379,48 @@
       font-size: 12px; color: #ff9999;
       cursor: pointer;
     }
+    .music-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+    .music-row input[type="file"] { flex: 1; font-size: 12px; color: #9fb0d8; }
+    .music-row button {
+      position: static;
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+    #musicName { font-size: 12px; color: #7fcf9f; margin-top: 4px; word-break: break-all; }
+
+    /* 未保存确认弹窗 */
+    #cfgConfirm {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(2, 4, 12, .55);
+    }
+    #cfgConfirm.show { display: flex; }
+    #cfgConfirm .box {
+      width: 300px;
+      max-width: 84vw;
+      background: rgba(14, 20, 42, .96);
+      border: 1px solid rgba(255, 209, 102, .3);
+      border-radius: 14px;
+      padding: 22px 20px 18px;
+      box-shadow: 0 0 40px rgba(255, 209, 102, .15);
+    }
+    #cfgConfirm .q { color: #f0e6c8; font-size: 15px; line-height: 1.6; margin-bottom: 18px; }
+    #cfgConfirm .btns { display: flex; flex-direction: column; gap: 8px; }
+    #cfgConfirm .btns button {
+      position: static;
+      width: 100%;
+      border-radius: 8px;
+      padding: 9px 0;
+      font-size: 13px;
+    }
+    #cfDiscard { border-color: rgba(255, 107, 107, .4); color: #ff9999; }
+    #cfCancel  { border-color: rgba(150, 165, 200, .3); color: #9fb0d8; }
   </style>
 </head>
 
@@ -337,6 +428,9 @@
   <canvas id="scene"></canvas>
 
   <div class="hint" id="hint">🕯 点一点蜡烛许愿吹灭它 · 首次点击开启生日歌 🎵</div>
+
+  <!-- 顶部寿星问候条 (配置姓名/性别/生日后显示) -->
+  <div id="topGreeting"></div>
 
   <div class="title">
     <div class="t1">happy birthday</div>
@@ -347,13 +441,18 @@
     <div class="m1">HAPPY BIRTHDAY</div>
     <div class="m2" id="toName">To 我的好兄弟 安巍</div>
     <div class="m3">愿你眼里有星河 · 心中有宇宙</div>
+    <div class="m4" id="msgDate"></div>
   </div>
 
   <button id="mute" title="音乐开关">🔊</button>
   <button id="relight">✨ 再点亮一次</button>
 
+  <!-- 自定义背景音乐 -->
+  <audio id="bgMusic" loop preload="auto"></audio>
+
   <!-- 配置面板 -->
   <button id="cfgBtn" title="蛋糕配置">⚙</button>
+  <div id="cfgMask"></div>
   <div id="cfgPanel">
     <h3>🎂 蛋糕配置</h3>
 
@@ -370,13 +469,13 @@
       </div>
       <div>
         <label>蜡烛数量</label>
-        <input type="number" id="cfgCandles" min="1" max="12" value="1" />
+        <input type="number" id="cfgCandles" min="1" max="12" value="1" title="蜡烛数量" />
       </div>
     </div>
 
     <label>生日日期</label>
     <div class="row">
-      <div><input type="date" id="cfgBirthday" /></div>
+      <div><input type="date" id="cfgBirthday" title="生日日期" /></div>
     </div>
 
     <label>蛋糕侧面刻字</label>
@@ -390,14 +489,34 @@
     <label>祝福副标题（吹灭后弹窗第二行）</label>
     <input type="text" id="cfgSubtitle" placeholder="如：愿你眼里有星河 · 心中有宇宙" />
 
+    <h3>🎵 背景音乐</h3>
+    <div class="hint-sm">上传喜欢的歌曲（mp3/m4a/wav），保存后循环播放；不上传则使用默认生日歌</div>
+    <div class="music-row">
+      <input type="file" id="cfgMusicInput" accept="audio/*" title="上传背景音乐" />
+      <button id="cfgMusicClear" type="button">默认音乐</button>
+    </div>
+    <div id="musicName"></div>
+
     <h3>📸 飘零照片（选填）</h3>
-    <div class="hint-sm">上传照片后，吹灭蜡烛时会以 3D 旋转方式飘落</div>
-    <input type="file" id="cfgPhotoInput" accept="image/*" multiple style="margin-top:8px" />
+    <div class="hint-sm">吹灭蜡烛后，照片从两侧飞入，围绕蛋糕 3D 环绕，并依次在中间放大展示</div>
+    <input type="file" id="cfgPhotoInput" accept="image/*" multiple style="margin-top:8px" title="上传照片" />
     <div class="photo-grid" id="cfgPhotoGrid"></div>
 
     <div class="actions">
       <button id="cfgSave">💾 保存</button>
       <button id="cfgReset" class="danger">↺ 重置默认</button>
+    </div>
+  </div>
+
+  <!-- 未保存修改确认弹窗 -->
+  <div id="cfgConfirm">
+    <div class="box">
+      <div class="q">配置已修改但尚未保存，是否保存后再关闭？</div>
+      <div class="btns">
+        <button id="cfSave">💾 保存修改并关闭</button>
+        <button id="cfDiscard">放弃修改并关闭</button>
+        <button id="cfCancel">继续编辑</button>
+      </div>
     </div>
   </div>
 
@@ -735,9 +854,16 @@ function ensureAudio(){
       songEnd = t0 + dur;
     }
     function startMusic() {          // 浏览器要求首次用户交互后才能出声
-      if (musicStarted || !AC) return;
+      if (musicStarted) return;
       musicStarted = true;
-      scheduleSong();
+      // 优先播放用户自定义背景音乐, 否则循环播放合成生日歌
+      if (cfg.music) {
+        bgMusicEl.currentTime = 0;
+        bgMusicEl.play().catch(() => {});
+        refreshBgVolume();
+      } else if (AC) {
+        scheduleSong();
+      }
     }
     function boomSound() {           // 烟花爆炸闷响
       if (!AC) return;
@@ -881,6 +1007,7 @@ function ensureAudio(){
       hint.style.animation = 'none';   // 先停掉呼吸动画, 否则会覆盖 opacity
       hint.style.opacity = 0;
       if (AC && musicGain) musicGain.gain.setTargetAtTime(0.3, AC.currentTime, 0.5);   // 音乐渐渐变小, 让位给烟花
+      refreshBgVolume();
     }
     function celebrate() {
       spawnConfetti();
@@ -890,25 +1017,182 @@ function ensureAudio(){
       msg.classList.add('show');
       relightBtn.style.display = 'block';
     }
+    /* ═══ 3D 照片环绕秀 ═══
+       流程: 左右两侧随机飞入 → 沿椭圆轨道 3D 环绕蛋糕 → 依次飞到画面正中闪缩放大展示 3.8 秒 → 缓慢随机飘移渐隐
+       全部展示完后自动循环再来一轮 */
+    const FOCUS_DUR = 3.8;         // 单张居中展示时长
+    const FOCUS_MOVE = 0.75;       // 从轨道飞到中间的时长
+    let pfQueue = [], pfFocus = -1, pfWait = 0, pfRestart = -1;
+
+    function orbitGeom() {
+      const orx = Math.min(W * 0.34, L.rw * 1.6);
+      return {
+        ocx: L.cx,
+        ocy: L.topY + L.cakeH * 0.42,
+        orx: orx,
+        ory: orx * 0.55
+      };
+    }
+    function orbitRender(p, g) {
+      // 返回某张照片在椭圆轨道上的位置/缩放/透视
+      return {
+        x: g.ocx + Math.cos(p.a) * g.orx,
+        y: g.ocy + Math.sin(p.a) * g.ory,
+        depth: Math.sin(p.a),
+        sx: 0.25 + 0.75 * Math.abs(Math.cos(p.a))   // 转到前后缘时侧收, 左右两侧时正对镜头
+      };
+    }
+    function easeInOut(k) { return k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; }
+    function easeOutBack(k) {
+      const c1 = 1.70158, c3 = c1 + 1;
+      return 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2);
+    }
+    function shuffleArr(a) {
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = (Math.random() * (i + 1)) | 0;
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function resetPhotos() {
+      photoFall = []; pfQueue = []; pfFocus = -1; pfWait = 0; pfRestart = -1;
+    }
+
     function spawnPhotos() {
-      const photos = (cfg.photos || []).filter(Boolean);
+      resetPhotos();
+      const photos = (cfg.photos || []).filter(Boolean).slice(0, 12);
       if (!photos.length) return;
-      for (let i = 0; i < photos.length; i++) {
+      const g = orbitGeom();
+      const n = photos.length;
+      const baseW = Math.max(84, Math.min(132, Math.min(W, H) * 0.16));
+      const off = rnd(0, TAU);
+      for (let i = 0; i < n; i++) {
+        const side = Math.random() < .5 ? -1 : 1;
+        const a0 = off + (i / n) * TAU;     // 初始均匀分布在轨道上
         photoFall.push({
           src: photos[i],
-          x: rnd(W * 0.15, W * 0.85), y: -60 - rnd(0, 200),
-          vy: rnd(30, 60), vx: rnd(-15, 15),
-          rot: rnd(-0.3, 0.3), vr: rnd(-1.2, 1.2),
-          tilt: rnd(-0.5, 0.5), tiltV: rnd(-0.8, 0.8),
-          w: rnd(80, 140), age: 0, life: rnd(6, 10),
-          delay: i * rnd(0.3, 0.8)
+          phase: 'enter',
+          pt: 0,
+          delay: i * 0.22,
+          side: side,
+          a: a0,
+          a0: a0,
+          aSpeed: rnd(0.38, 0.52),
+          w: baseW * rnd(0.9, 1.05),
+          ex: side < 0 ? -120 : W + 120,
+          ey: rnd(g.ocy - g.ory * 0.7, g.ocy + g.ory * 0.7),
+          x: 0, y: 0, scale: 1, sx: 1, alpha: 0, flash: 0,
+          rot: rnd(-0.06, 0.06),
+          dead: false,
+          vx: 0, vy: 0
         });
       }
+      pfQueue = shuffleArr(photos.map((_, i) => i));
+      pfWait = 1.2 + n * 0.22;   // 等所有照片入场完成后再开始依次居中
+    }
+
+    function startFocus(i) {
+      const p = photoFall[i];
+      p.phase = 'focus';
+      p.pt = 0;
+      p.fx0 = p.x; p.fy0 = p.y; p.fsc0 = p.scale; p.fsx0 = p.sx;
+      p.fx = L.cx;
+      p.fy = Math.min(H * 0.3, orbitGeom().ocy - 30);
+      pfFocus = i;
+    }
+
+    function updatePhotos(dt) {
+      if (!photoFall.length) {
+        if (pfRestart > 0) { pfRestart -= dt; if (pfRestart <= 0) spawnPhotos(); }
+        return;
+      }
+      const g = orbitGeom();
+      let anyAlive = false, allOrbit = true;
+
+      for (let i = 0; i < photoFall.length; i++) {
+        const p = photoFall[i];
+        if (p.dead) continue;
+        if (p.delay > 0) { p.delay -= dt; allOrbit = false; continue; }
+        anyAlive = true;
+        p.pt += dt;
+
+        if (p.phase === 'enter') {
+          allOrbit = false;
+          const D = 1.3;
+          const k = Math.min(1, p.pt / D);
+          const e = easeInOut(k);
+          const o = orbitRender(p, g);
+          // 入场: 从屏幕两侧飞向自己的轨道位置, 同时淡入并展开透视
+          p.x = p.ex + (o.x - p.ex) * e;
+          p.y = p.ey + (o.y - p.ey) * e;
+          p.sx = 0.4 + (o.sx - 0.4) * e;
+          p.scale = 0.7 + 0.3 * e;
+          p.alpha = Math.min(1, k * 1.6);
+          if (k >= 1) { p.phase = 'orbit'; p.a = p.a0; }
+        } else if (p.phase === 'orbit') {
+          p.a += p.aSpeed * dt;
+          const o = orbitRender(p, g);
+          p.x = o.x; p.y = o.y; p.sx = o.sx;
+          p.scale = 0.62 + 0.45 * ((o.depth + 1) / 2);   // 前面大后面小
+          p.alpha = 0.6 + 0.4 * ((o.depth + 1) / 2);
+        } else if (p.phase === 'focus') {
+          allOrbit = false;
+          if (p.pt < FOCUS_MOVE) {
+            // 闪缩变大飞到画面正中
+            const k = easeOutBack(Math.min(1, p.pt / FOCUS_MOVE));
+            p.x = p.fx0 + (p.fx - p.fx0) * k;
+            p.y = p.fy0 + (p.fy - p.fy0) * k;
+            p.scale = p.fsc0 + (1.85 - p.fsc0) * k;
+            p.sx = p.fsx0 + (1 - p.fsx0) * k;
+          } else {
+            // 居中展示: 轻微呼吸
+            const breathe = 1 + 0.025 * Math.sin((p.pt - FOCUS_MOVE) * 2.2);
+            p.x = p.fx; p.y = p.fy; p.scale = 1.85 * breathe; p.sx = 1;
+          }
+          // 闪缩白闪: 到达瞬间最亮, 快速衰减
+          p.flash = Math.max(0, 1 - Math.max(0, p.pt - 0.12) / 0.8);
+          p.alpha = 1;
+          if (p.pt >= FOCUS_DUR) {
+            p.phase = 'exit'; p.pt = 0;
+            const ang = rnd(0, TAU);
+            p.vx = Math.cos(ang) * rnd(18, 46);
+            p.vy = Math.sin(ang) * rnd(18, 46) - 14;   // 略偏上, 随机方向飘走
+          }
+        } else if (p.phase === 'exit') {
+          allOrbit = false;
+          const D = 1.9;
+          const k = Math.min(1, p.pt / D);
+          p.x += p.vx * dt; p.y += p.vy * dt;
+          p.vy += 6 * dt;
+          p.scale = 1.85 * (1 - 0.25 * k);
+          p.alpha = 1 - k;       // 缓慢渐隐
+          if (k >= 1) p.dead = true;
+        }
+      }
+
+      // 焦点调度: 依次让每张照片居中共舞
+      if (pfFocus === -1) {
+        pfWait -= dt;
+        if (allOrbit && pfWait <= 0) {
+          while (pfQueue.length) {
+            const i = pfQueue.shift();
+            const q = photoFall[i];
+            if (q && !q.dead && q.phase === 'orbit') { startFocus(i); break; }
+          }
+        }
+      } else {
+        const f = photoFall[pfFocus];
+        if (!f || f.dead || f.phase === 'exit') { pfFocus = -1; pfWait = 0.5; }
+      }
+
+      if (!anyAlive) pfRestart = 2.5;   // 全部渐隐后休息 2.5 秒再来一轮
     }
     relightBtn.addEventListener('click', () => {
       state = 'lit'; celebrated = false; outT = 0;
-      fw = []; fparts = []; flashes = []; blessings = []; photoFall = [];   // 清空上一轮庆祝残留，准备重新开始
+      fw = []; fparts = []; flashes = []; blessings = []; resetPhotos();   // 清空上一轮庆祝残留，准备重新开始
       if (AC && musicGain) musicGain.gain.setTargetAtTime(1, AC.currentTime, 0.1);   // 音乐恢复音量，准备重新播放生日歌，避免与用户交互冲突
+      refreshBgVolume();
       msg.classList.remove('show');
       relightBtn.style.display = 'none';
       hint.style.animation = '';
@@ -919,6 +1203,7 @@ function ensureAudio(){
       muted = !muted;
       muteBtn.textContent = muted ? '🔇' : '🔊';
       if (master) master.gain.value = muted ? 0 : 0.85;
+      refreshBgVolume();
     });
     /* 浏览器要求首次用户交互后才能播放声音: 任意点击即开启生日歌 */
     document.addEventListener('pointerdown', () => { ensureAudio(); startMusic(); }, { passive: true });
@@ -1014,13 +1299,8 @@ function ensureAudio(){
       for (const b of blessings) { b.age += dt; b.y -= b.vy * dt; }
       blessings = blessings.filter(b => b.age < b.life && b.y > -50);
       if (blessings.length > 80) blessings.splice(0, blessings.length - 80);   // 移动端性能保护
-      // 飘零 3D 照片
-      for (const p of photoFall) {
-        if (p.delay > 0) { p.delay -= dt; continue; }
-        p.age += dt; p.x += p.vx * dt; p.y += p.vy * dt;
-        p.rot += p.vr * dt; p.tilt += p.tiltV * dt;
-      }
-      photoFall = photoFall.filter(p => p.age < p.life && p.y < H + 100);
+      // 3D 环绕照片
+      updatePhotos(dt);
       // 点击星光
       for (const s of sparkles) { s.age += dt; s.vy += 220 * dt; s.vx *= Math.max(0, 1 - 2 * dt); s.x += s.vx * dt; s.y += s.vy * dt; }
       sparkles = sparkles.filter(s => s.age < s.life);
@@ -1050,7 +1330,7 @@ function ensureAudio(){
         if (rainT <= 0) { rainT = 0.12; spawnRain(); }
       }
       // 生日歌循环调度: 一遍结束后自动排下一遍
-      if (musicStarted && AC && AC.state === 'running' && AC.currentTime > songEnd - 0.2) scheduleSong();
+      if (musicStarted && !cfg.music && AC && AC.state === 'running' && AC.currentTime > songEnd - 0.2) scheduleSong();
     }
 
     /* ================= 绘制 ================= */
@@ -1338,28 +1618,45 @@ function ensureAudio(){
       }
       ctx.globalAlpha = 1;
 
-      // 飘零 3D 照片 (旋转飘落, 带金边光晕)
+      // 3D 环绕照片 (椭圆轨道透视, 居中闪缩放大, 随机飘移渐隐, 金色边框光晕)
+      const drawList = [];
       for (const p of photoFall) {
-        if (p.delay > 0) continue;
-        const fi = Math.min(1, p.age / 0.8) * Math.min(1, (p.life - p.age) / 1.5);
-        if (fi <= 0) continue;
+        if (p.dead || p.delay > 0) continue;
+        drawList.push(p);
+      }
+      // 景深排序: 轨道背面的先画, 居中展示的始终最上层
+      drawList.sort((a, b) => {
+        const af = (a.phase === 'focus' || a.phase === 'exit') ? 2 : 0;
+        const bf = (b.phase === 'focus' || b.phase === 'exit') ? 2 : 0;
+        if (af !== bf) return af - bf;
+        return Math.sin(a.a) - Math.sin(b.a);
+      });
+      for (const p of drawList) {
         const img = photoImgs[p.src];
         if (!img || !img.width) continue;
-        const ih = Math.round(p.w * img.height / img.width);
+        const w = p.w * p.scale;
+        const ih = w * img.height / img.width;
+        const focused = p.phase === 'focus';
+        const pad = focused ? 4 : 3;
         ctx.save();
-        ctx.globalAlpha = fi;
+        ctx.globalAlpha = Math.max(0, Math.min(1, p.alpha));
         ctx.translate(p.x, p.y);
         ctx.rotate(p.rot);
-        ctx.transform(1, 0, 0, Math.cos(p.tilt), 0, 0);  // Y 轴透视翻转 (3D 效果)
-        // 金边
-        ctx.shadowColor = 'rgba(255,209,102,0.4)';
-        ctx.shadowBlur = 20;
-        ctx.fillStyle = 'rgba(255,209,102,0.8)';
-        const pad = 3;
-        roundRect(ctx, -p.w/2 - pad, -ih/2 - pad, p.w + pad*2, ih + pad*2, 8);
+        ctx.transform(p.sx, 0, 0, 1, 0, 0);   // X 轴方向压缩模拟绕蛋糕公转的透视
+        ctx.shadowColor = focused ? 'rgba(255,209,102,0.85)' : 'rgba(255,209,102,0.4)';
+        ctx.shadowBlur = focused ? 34 : 18;
+        ctx.fillStyle = 'rgba(255,209,102,0.85)';
+        roundRect(ctx, -w / 2 - pad, -ih / 2 - pad, w + pad * 2, ih + pad * 2, 8);
         ctx.fill();
         ctx.shadowBlur = 0;
-        ctx.drawImage(img, -p.w/2, -ih/2, p.w, ih);
+        ctx.drawImage(img, -w / 2, -ih / 2, w, ih);
+        // 居中瞬间的闪缩白闪
+        if (p.flash > 0.01) {
+          ctx.globalAlpha = Math.max(0, Math.min(1, p.alpha)) * p.flash * 0.85;
+          ctx.fillStyle = '#ffffff';
+          roundRect(ctx, -w / 2 - pad, -ih / 2 - pad, w + pad * 2, ih + pad * 2, 8);
+          ctx.fill();
+        }
         ctx.restore();
       }
       ctx.globalAlpha = 1;
@@ -1431,30 +1728,30 @@ function ensureAudio(){
       bgCv.getContext('2d').setTransform(DPR, 0, 0, DPR, 0, 0);
       cakeCv.getContext('2d').setTransform(DPR, 0, 0, DPR, 0, 0);
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-      layout(); renderBG(); renderCake();
-      recalcCandles(cfg.candles);
+      layout(); renderBG();
+      recalcCandles(cfg.candles);   // 必须先算蜡烛位置再画蛋糕, 否则多蜡烛会堆叠在中心
+      renderCake();
       initStars(); initFloaters(); initOrbits();
     }
     let rzT;
     addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(resize, 150); });
 
-    /* 定制称呼: index.html?to=名字 */
-    const to = new URLSearchParams(location.search).get('to');
-    if (to) document.getElementById('toName').textContent = 'To ' + to;
-
     /* ================= 蛋糕配置系统 ================= */
     const DEFAULT_CFG = {
       name: '',           // 寿星姓名
-      toName: 'To 我的好兄弟 安巍',
+      toName: '',         // 留空时自动用 "To {性别} {姓名}"
       gender: '兄弟',
-      birthday: '',      // YYYY-MM-DD
+      birthday: '',       // YYYY-MM-DD
       candles: 1,         // 蜡烛数量
       engrave: '安巍生日快乐',
       blessings: '生日快乐, 平安喜乐, 前程似锦, 万事胜意, 得偿所愿, 健康快乐, 友谊长存, 未来可期, 好运连连, 笑口常开, 岁岁常欢愉, 年年皆胜意, MC小安, MC安子, MC安巍, 所求皆如愿, 所行化坦途, 日日是好日, 被世界温柔以待, 眼里有光 心里有海, 好运正在派送, 星辰大海为你闪耀, 又长大一岁啦, 生日快乐万事胜意, 愿你一生努力一生被爱',
       subtitle: '愿你眼里有星河 · 心中有宇宙',
-      photos: []          // base64 图片数组
+      photos: [],         // base64 图片数组
+      music: '',          // base64 自定义背景音乐
+      musicName: ''
     };
 
+    const urlTo = new URLSearchParams(location.search).get('to');
     let cfg = loadCfg();
 
     function loadCfg() {
@@ -1464,15 +1761,65 @@ function ensureAudio(){
       } catch (e) { return Object.assign({}, DEFAULT_CFG); }
     }
 
-    function saveCfg(c) {
-      localStorage.setItem('cakeCfg', JSON.stringify(c));
-      cfg = c;
-      applyCfg();
+    /* 生日日期格式化: 2000-09-13 → 2000年9月13日 */
+    function fmtBirthday(s) {
+      if (!s) return '';
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+      if (!m) return s;
+      return `${+m[1]}年${+m[2]}月${+m[3]}日`;
     }
 
-    function parseBlessings(str) {
-      if (!str || !str.trim()) return ['生日快乐'];
-      return str.split(/[,，\n\r、;；\s]+/).map(s => s.trim()).filter(Boolean);
+    /* 自动组装祝福称呼 */
+    function composeToName(c) {
+      if (c.toName) return c.toName;
+      if (c.name) return `To ${c.gender || ''} ${c.name}`.replace(/\s+/g, ' ').trim();
+      return 'To 我的好兄弟 安巍';
+    }
+
+    /* 自定义背景音乐播放器 */
+    const bgMusicEl = document.getElementById('bgMusic');
+    function refreshBgVolume() {
+      if (!cfg.music) return;
+      if (muted) { bgMusicEl.volume = 0; return; }
+      // 吹灭后与合成生日歌一样: 音乐变小让位烟花声
+      bgMusicEl.volume = (state === 'lit') ? 0.85 : 0.3;
+    }
+
+    function applyCfg() {
+      // 弹窗文字
+      document.getElementById('toName').textContent = urlTo ? 'To ' + urlTo : composeToName(cfg);
+      document.querySelector('.msg .m3').textContent = cfg.subtitle || DEFAULT_CFG.subtitle;
+      const bd = fmtBirthday(cfg.birthday);
+      document.getElementById('msgDate').textContent = bd ? '🎉 ' + bd : '';
+
+      // 顶部寿星问候条: 姓名或生日任一存在即显示
+      const g = document.getElementById('topGreeting');
+      let html = '';
+      if (cfg.name) html += `🎂 <span class="g-name">${cfg.gender || ''} ${cfg.name}</span>`;
+      if (bd) html += `<span class="g-date">${bd} 生日快乐</span>`;
+      g.innerHTML = html;
+      g.classList.toggle('show', !!html);
+
+      // 祝福语列表
+      BLESSINGS.length = 0;
+      BLESSINGS.push(...parseBlessings(cfg.blessings));
+
+      // 蛋糕刻字
+      engraveText = cfg.engrave || DEFAULT_CFG.engrave;
+
+      // 蜡烛位置
+      recalcCandles(cfg.candles);
+
+      // 背景音乐
+      if (cfg.music) {
+        if (bgMusicEl.src !== cfg.music) bgMusicEl.src = cfg.music;
+        if (musicStarted) bgMusicEl.play().catch(() => {});
+        refreshBgVolume();
+      } else {
+        bgMusicEl.pause();
+        bgMusicEl.removeAttribute('src');
+        bgMusicEl.load();
+      }
     }
 
     /* 蜡烛位置数组 (多蜡烛布局) */
@@ -1491,93 +1838,129 @@ function ensureAudio(){
       }
     }
 
-    /* 应用配置到画面 */
-    function applyCfg() {
-      // 弹窗文字
-      document.getElementById('toName').textContent = cfg.toName || DEFAULT_CFG.toName;
-      document.querySelector('.msg .m3').textContent = cfg.subtitle || DEFAULT_CFG.subtitle;
+    function parseBlessings(str) {
+      if (!str || !str.trim()) return ['生日快乐'];
+      return str.split(/[,，\n\r、;；\s]+/).map(s => s.trim()).filter(Boolean);
+    }
 
-      // 祝福语列表
-      BLESSINGS.length = 0;
-      BLESSINGS.push(...parseBlessings(cfg.blessings));
-
-      // 蛋糕刻字
-      engraveText = cfg.engrave || DEFAULT_CFG.engrave;
-
-      // 蜡烛数量 → 重新计算位置
-      recalcCandles(cfg.candles);
+    function saveCfg(c) {
+      try {
+        localStorage.setItem('cakeCfg', JSON.stringify(c));
+      } catch (e) {
+        alert('保存失败：浏览器本地存储空间不足，通常是背景音乐文件过大，请换一首更小的歌曲（建议 3MB 以内）。');
+        return false;
+      }
+      cfg = c;
+      applyCfg();
+      return true;
     }
 
     let engraveText = DEFAULT_CFG.engrave;
 
-    /* ---- 配置面板交互 ---- */
+    /* ---- 面板开关 + 草稿/脏检查 ---- */
     const cfgBtn = document.getElementById('cfgBtn');
     const cfgPanel = document.getElementById('cfgPanel');
+    const cfgMask = document.getElementById('cfgMask');
+    const cfgConfirm = document.getElementById('cfgConfirm');
+    let draft = null;          // 打开面板期间的临时配置, 点保存才提交
+
+    function openPanel() {
+      draft = JSON.parse(JSON.stringify(cfg));
+      fillCfgForm();
+      cfgPanel.classList.add('show');
+      cfgMask.classList.add('show');
+      cfgBtn.classList.add('open');
+      cfgBtn.textContent = '✕';
+    }
+    function closePanel() {
+      cfgPanel.classList.remove('show');
+      cfgMask.classList.remove('show');
+      cfgBtn.classList.remove('open');
+      cfgBtn.textContent = '⚙';
+      cfgConfirm.classList.remove('show');
+      draft = null;
+    }
+    function isDirty() {
+      if (!draft) return false;
+      // 以表单当前值 + 草稿中的照片/音乐生成快照比较
+      return JSON.stringify(collectFormData(draft)) !== JSON.stringify(cfg);
+    }
+
     cfgBtn.addEventListener('click', () => {
-      const open = cfgPanel.classList.toggle('show');
-      cfgBtn.classList.toggle('open', open);
-      cfgBtn.textContent = open ? '✕' : '⚙';
-      if (open) fillCfgForm();
+      if (cfgPanel.classList.contains('show')) requestClosePanel();
+      else openPanel();
     });
+    // 点击面板以外区域: 无改动直接关闭, 有改动弹确认
+    cfgMask.addEventListener('click', requestClosePanel);
+
+    function requestClosePanel() {
+      if (!isDirty()) { closePanel(); return; }
+      cfgConfirm.classList.add('show');
+    }
 
     function fillCfgForm() {
-      document.getElementById('cfgName').value = cfg.name || '';
-      document.getElementById('cfgToName').value = cfg.toName || '';
-      document.getElementById('cfgGender').value = cfg.gender || '';
-      document.getElementById('cfgBirthday').value = cfg.birthday || '';
-      document.getElementById('cfgCandles').value = cfg.candles || 1;
-      document.getElementById('cfgEngrave').value = cfg.engrave || '';
-      document.getElementById('cfgBlessings').value = cfg.blessings || '';
-      document.getElementById('cfgSubtitle').value = cfg.subtitle || '';
+      document.getElementById('cfgName').value = draft.name || '';
+      document.getElementById('cfgToName').value = draft.toName || '';
+      document.getElementById('cfgGender').value = draft.gender || '';
+      document.getElementById('cfgBirthday').value = draft.birthday || '';
+      document.getElementById('cfgCandles').value = draft.candles || 1;
+      document.getElementById('cfgEngrave').value = draft.engrave || '';
+      document.getElementById('cfgBlessings').value = draft.blessings || '';
+      document.getElementById('cfgSubtitle').value = draft.subtitle || '';
+      document.getElementById('musicName').textContent = draft.music ? '🎵 当前：' + (draft.musicName || '自定义音乐') : '';
       renderPhotoGrid();
     }
 
-    document.getElementById('cfgSave').addEventListener('click', () => {
-      const newCfg = {
+    function collectFormData(base) {
+      return Object.assign({}, base, {
         name: document.getElementById('cfgName').value.trim(),
-        toName: document.getElementById('cfgToName').value.trim() || DEFAULT_CFG.toName,
+        toName: document.getElementById('cfgToName').value.trim(),
         gender: document.getElementById('cfgGender').value.trim() || '兄弟',
         birthday: document.getElementById('cfgBirthday').value,
         candles: Math.max(1, Math.min(12, parseInt(document.getElementById('cfgCandles').value) || 1)),
         engrave: document.getElementById('cfgEngrave').value.trim() || DEFAULT_CFG.engrave,
         blessings: document.getElementById('cfgBlessings').value.trim() || DEFAULT_CFG.blessings,
-        subtitle: document.getElementById('cfgSubtitle').value.trim() || DEFAULT_CFG.subtitle,
-        photos: cfg.photos || []
-      };
-      saveCfg(newCfg);
-      // 预加载新增照片
-      for (const src of (newCfg.photos || [])) {
-        if (!photoImgs[src]) {
-          const img = new Image();
-          img.src = src;
-          photoImgs[src] = img;
+        subtitle: document.getElementById('cfgSubtitle').value.trim() || DEFAULT_CFG.subtitle
+      });
+    }
+
+    function commitSave() {
+      const data = collectFormData(draft);
+      if (saveCfg(data)) {
+        // 预加载新增照片
+        for (const src of (data.photos || [])) {
+          if (!photoImgs[src]) { const img = new Image(); img.src = src; photoImgs[src] = img; }
         }
+        renderCake();
+        closePanel();
       }
-      // 重新渲染蛋糕离屏画布（蜡烛数量变化需要重绘）
-      renderCake();
-      cfgPanel.classList.remove('show');
-      cfgBtn.classList.remove('open');
-      cfgBtn.textContent = '⚙';
-    });
+    }
+    document.getElementById('cfgSave').addEventListener('click', commitSave);
+
+    // 确认弹窗三个选择
+    document.getElementById('cfSave').addEventListener('click', commitSave);
+    document.getElementById('cfDiscard').addEventListener('click', closePanel);  // 放弃修改: 草稿直接丢弃
+    document.getElementById('cfCancel').addEventListener('click', () => cfgConfirm.classList.remove('show'));
 
     document.getElementById('cfgReset').addEventListener('click', () => {
+      if (!confirm('确定恢复全部默认配置吗？当前自定义内容将被清除。')) return;
       localStorage.removeItem('cakeCfg');
       cfg = Object.assign({}, DEFAULT_CFG);
       applyCfg();
       renderCake();
+      draft = JSON.parse(JSON.stringify(cfg));
       fillCfgForm();
     });
 
-    /* ---- 照片上传 ---- */
+    /* ---- 照片上传 (写入草稿) ---- */
     document.getElementById('cfgPhotoInput').addEventListener('change', e => {
       const files = e.target.files;
-      if (!files.length) return;
+      if (!files.length || !draft) return;
       const maxPhotos = 12;
       for (const file of files) {
-        if (cfg.photos.length >= maxPhotos) break;
+        if (draft.photos.length >= maxPhotos) { alert('最多上传 12 张照片'); break; }
         const reader = new FileReader();
         reader.onload = ev => {
-          // 压缩到 400px 宽以内
           const img = new Image();
           img.onload = () => {
             const cw = 400;
@@ -1585,8 +1968,8 @@ function ensureAudio(){
             const tc = document.createElement('canvas');
             tc.width = cw; tc.height = ch;
             tc.getContext('2d').drawImage(img, 0, 0, cw, ch);
-            cfg.photos.push(tc.toDataURL('image/jpeg', 0.7));
-            if (cfg.photos.length <= maxPhotos) renderPhotoGrid();
+            draft.photos.push(tc.toDataURL('image/jpeg', 0.7));
+            renderPhotoGrid();
           };
           img.src = ev.target.result;
         };
@@ -1598,31 +1981,51 @@ function ensureAudio(){
     function renderPhotoGrid() {
       const grid = document.getElementById('cfgPhotoGrid');
       grid.innerHTML = '';
-      (cfg.photos || []).forEach((src, i) => {
+      (draft.photos || []).forEach((src, i) => {
         const div = document.createElement('div');
         div.className = 'photo-item';
         div.innerHTML = `<img src="${src}"><div class="del" data-i="${i}">✕</div>`;
         div.querySelector('.del').addEventListener('click', () => {
-          cfg.photos.splice(i, 1);
+          draft.photos.splice(i, 1);
           renderPhotoGrid();
         });
         grid.appendChild(div);
       });
     }
 
+    /* ---- 背景音乐上传 (写入草稿, 保存后生效) ---- */
+    document.getElementById('cfgMusicInput').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file || !draft) return;
+      if (file.size > 4 * 1024 * 1024) {
+        if (!confirm('该音乐文件较大（' + (file.size / 1048576).toFixed(1) + 'MB），可能超出浏览器本地存储上限导致保存失败，仍要继续吗？')) {
+          e.target.value = ''; return;
+        }
+      }
+      const reader = new FileReader();
+      reader.onload = ev => {
+        draft.music = ev.target.result;
+        draft.musicName = file.name;
+        document.getElementById('musicName').textContent = '🎵 待保存：' + file.name;
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    });
+    document.getElementById('cfgMusicClear').addEventListener('click', () => {
+      if (!draft) return;
+      draft.music = ''; draft.musicName = '';
+      document.getElementById('musicName').textContent = '将使用默认生日歌（保存后生效）';
+      document.getElementById('cfgMusicInput').value = '';
+    });
+
     /* 首次加载应用配置 */
-    recalcCandles(cfg.candles);
     BLESSINGS.length = 0;
     BLESSINGS.push(...parseBlessings(cfg.blessings));
     engraveText = cfg.engrave || DEFAULT_CFG.engrave;
-    // 预加载照片 Image 对象
     for (const src of (cfg.photos || [])) {
-      if (!photoImgs[src]) {
-        const img = new Image();
-        img.src = src;
-        photoImgs[src] = img;
-      }
+      if (!photoImgs[src]) { const img = new Image(); img.src = src; photoImgs[src] = img; }
     }
+    applyCfg();
 
     resize();
     requestAnimationFrame(ts => { last = ts; requestAnimationFrame(frame); });
