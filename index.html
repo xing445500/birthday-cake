@@ -10,8 +10,10 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="生日快乐" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <link rel="manifest" href='data:application/manifest+json,{"name":"Happy Birthday","short_name":"生日快乐","start_url":".","display":"fullscreen","orientation":"portrait","background_color":"%2304050d","theme_color":"%2304050d"}' />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>" />
+  <link rel="manifest"
+    href='data:application/manifest+json,{"name":"Happy Birthday","short_name":"生日快乐","start_url":".","display":"fullscreen","orientation":"portrait","background_color":"%2304050d","theme_color":"%2304050d"}' />
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>" />
   <title>🎂小安 Happy Birthday</title>
   <!--
   ══════════════════════════════════════════════════════════
@@ -45,6 +47,17 @@
       touch-action: none;
       animation: fadeIn 1.6s ease both
     }
+    /* 居中展示照片的置顶画布: 层级高于祝福文字和按钮, 不拦截点击 */
+    #photoTop {
+      position: fixed;
+      inset: 0;
+      display: block;
+      z-index: 15;
+      pointer-events: none;
+      opacity: 1;
+      transition: opacity .3s;
+    }
+    #photoTop.hide { opacity: 0; }
 
     @keyframes fadeIn {
       from {
@@ -223,8 +236,17 @@
       text-shadow: 0 0 16px rgba(255, 209, 102, .45);
       text-align: center;
     }
-    #topGreeting.show { opacity: .92; transform: translateX(-50%) translateY(0); }
-    #topGreeting .g-name { font-size: 16px; color: #ffd166; }
+
+    #topGreeting.show {
+      opacity: .92;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    #topGreeting .g-name {
+      font-size: 16px;
+      color: #ffd166;
+    }
+
     #topGreeting .g-date {
       display: block;
       font-size: 11px;
@@ -239,7 +261,8 @@
       position: fixed;
       right: 14px;
       bottom: calc(14px + env(safe-area-inset-bottom));
-      z-index: 4;                 /* 低调: 层级低, 默认半透明, 不抢画面 */
+      z-index: 4;
+      /* 低调: 层级低, 默认半透明, 不抢画面 */
       width: 34px;
       height: 34px;
       border-radius: 50%;
@@ -252,8 +275,17 @@
       cursor: pointer;
       transition: opacity .35s, transform .35s, box-shadow .35s;
     }
-    #cfgBtn:hover { opacity: 1; transform: rotate(90deg); }
-    #cfgBtn.open { opacity: 1; transform: rotate(135deg); z-index: 12; }
+
+    #cfgBtn:hover {
+      opacity: 1;
+      transform: rotate(90deg);
+    }
+
+    #cfgBtn.open {
+      opacity: 1;
+      transform: rotate(135deg);
+      z-index: 12;
+    }
 
     /* 点击面板外区域的透明遮罩 */
     #cfgMask {
@@ -265,7 +297,11 @@
       pointer-events: none;
       transition: opacity .35s;
     }
-    #cfgMask.show { opacity: 1; pointer-events: auto; }
+
+    #cfgMask.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
 
     #cfgPanel {
       position: fixed;
@@ -286,23 +322,32 @@
       color: #e8eefc;
       font: 14px/1.5 "PingFang SC", "Microsoft YaHei", sans-serif;
     }
-    #cfgPanel.show { transform: translateX(0); }
+
+    #cfgPanel.show {
+      transform: translateX(0);
+    }
+
     #cfgPanel h3 {
       font-size: 18px;
       font-weight: 700;
       color: #ffd166;
       margin: 22px 0 10px;
       letter-spacing: .08em;
-      border-bottom: 1px solid rgba(255,209,102,.15);
+      border-bottom: 1px solid rgba(255, 209, 102, .15);
       padding-bottom: 6px;
     }
-    #cfgPanel h3:first-child { margin-top: 6px; }
+
+    #cfgPanel h3:first-child {
+      margin-top: 6px;
+    }
+
     #cfgPanel label {
       display: block;
       margin: 10px 0 4px;
       color: #9fb0d8;
       font-size: 13px;
     }
+
     #cfgPanel input[type="text"],
     #cfgPanel input[type="number"],
     #cfgPanel input[type="date"],
@@ -318,29 +363,41 @@
       outline: none;
       transition: .25s;
     }
+
     #cfgPanel textarea {
       min-height: 70px;
       resize: vertical;
       line-height: 1.6;
     }
+
     #cfgPanel input:focus,
     #cfgPanel textarea:focus {
       border-color: rgba(255, 209, 102, .55);
       box-shadow: 0 0 12px rgba(255, 209, 102, .15);
     }
-    #cfgPanel .row { display: flex; gap: 10px; }
-    #cfgPanel .row > div { flex: 1; }
+
+    #cfgPanel .row {
+      display: flex;
+      gap: 10px;
+    }
+
+    #cfgPanel .row>div {
+      flex: 1;
+    }
+
     #cfgPanel .hint-sm {
       font-size: 12px;
       color: #5d6a8a;
       margin-top: 4px;
       line-height: 1.5;
     }
+
     #cfgPanel .actions {
       display: flex;
       gap: 10px;
       margin-top: 20px;
     }
+
     #cfgPanel .actions button {
       position: static;
       flex: 1;
@@ -349,38 +406,63 @@
       font-size: 14px;
       letter-spacing: .1em;
     }
+
     #cfgPanel .actions button.danger {
       border-color: rgba(255, 107, 107, .4);
       color: #ff9999;
     }
+
     #cfgPanel .photo-grid {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
       margin-top: 8px;
     }
+
     #cfgPanel .photo-item {
       position: relative;
       width: 72px;
       height: 72px;
       border-radius: 8px;
       overflow: hidden;
-      border: 1px solid rgba(255,209,102,.15);
+      border: 1px solid rgba(255, 209, 102, .15);
     }
+
     #cfgPanel .photo-item img {
-      width: 100%; height: 100%; object-fit: cover;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
+
     #cfgPanel .photo-item .del {
-      position: absolute; top: 2px; right: 2px;
-      width: 18px; height: 18px;
-      background: rgba(0,0,0,.6);
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 18px;
+      height: 18px;
+      background: rgba(0, 0, 0, .6);
       border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12px; color: #ff9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #ff9999;
       cursor: pointer;
     }
-    .music-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
-    .music-row input[type="file"] { flex: 1; font-size: 12px; color: #9fb0d8; }
+
+    .music-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .music-row input[type="file"] {
+      flex: 1;
+      font-size: 12px;
+      color: #9fb0d8;
+    }
+
     .music-row button {
       position: static;
       padding: 6px 12px;
@@ -388,7 +470,13 @@
       border-radius: 8px;
       white-space: nowrap;
     }
-    #musicName { font-size: 12px; color: #7fcf9f; margin-top: 4px; word-break: break-all; }
+
+    #musicName {
+      font-size: 12px;
+      color: #7fcf9f;
+      margin-top: 4px;
+      word-break: break-all;
+    }
 
     /* 未保存确认弹窗 */
     #cfgConfirm {
@@ -400,7 +488,11 @@
       justify-content: center;
       background: rgba(2, 4, 12, .55);
     }
-    #cfgConfirm.show { display: flex; }
+
+    #cfgConfirm.show {
+      display: flex;
+    }
+
     #cfgConfirm .box {
       width: 300px;
       max-width: 84vw;
@@ -410,8 +502,20 @@
       padding: 22px 20px 18px;
       box-shadow: 0 0 40px rgba(255, 209, 102, .15);
     }
-    #cfgConfirm .q { color: #f0e6c8; font-size: 15px; line-height: 1.6; margin-bottom: 18px; }
-    #cfgConfirm .btns { display: flex; flex-direction: column; gap: 8px; }
+
+    #cfgConfirm .q {
+      color: #f0e6c8;
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+
+    #cfgConfirm .btns {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
     #cfgConfirm .btns button {
       position: static;
       width: 100%;
@@ -419,13 +523,22 @@
       padding: 9px 0;
       font-size: 13px;
     }
-    #cfDiscard { border-color: rgba(255, 107, 107, .4); color: #ff9999; }
-    #cfCancel  { border-color: rgba(150, 165, 200, .3); color: #9fb0d8; }
+
+    #cfDiscard {
+      border-color: rgba(255, 107, 107, .4);
+      color: #ff9999;
+    }
+
+    #cfCancel {
+      border-color: rgba(150, 165, 200, .3);
+      color: #9fb0d8;
+    }
   </style>
 </head>
 
 <body>
   <canvas id="scene"></canvas>
+  <canvas id="photoTop"></canvas>
 
   <div class="hint" id="hint">🕯 点一点蜡烛许愿吹灭它 · 首次点击开启生日歌 🎵</div>
 
@@ -526,6 +639,8 @@
     const TAU = Math.PI * 2;
     const cv = document.getElementById('scene');
     const ctx = cv.getContext('2d');
+    const topCv = document.getElementById('photoTop');   // 居中照片置顶画布
+    const topCtx = topCv.getContext('2d');
     const bgCv = document.createElement('canvas');   // 背景离屏画布(静态)
     const cakeCv = document.createElement('canvas');   // 蛋糕离屏画布(静态)
     let W = 0, H = 0, DPR = 1;
@@ -805,25 +920,25 @@
 
     /* ================= 音频 (Web Audio 合成, 无外部文件) ================= */
     let AC = null, master = null, musicGain = null, sfxGain = null, muted = false;
-function ensureAudio(){
-  if(!AC){
-    AC = new (window.AudioContext || window.webkitAudioContext)();
-    master = AC.createGain();
-    master.gain.value = muted ? 0 : 0.85;
-    // 音乐/音效分轨: 吹灭蜡烛后音乐渐弱, 烟花声更突出
-    musicGain = AC.createGain(); musicGain.gain.value = 1;
-    sfxGain = AC.createGain(); sfxGain.gain.value = 1;
-    musicGain.connect(master); sfxGain.connect(master);
-    // 轻混响感
-    const delay = AC.createDelay(); delay.delayTime.value = 0.27;
-    const fb = AC.createGain(); fb.gain.value = 0.22;
-    const wet = AC.createGain(); wet.gain.value = 0.18;
-    master.connect(AC.destination);
-    master.connect(delay); delay.connect(fb); fb.connect(delay);
-    delay.connect(wet); wet.connect(AC.destination);
-  }
-  if(AC.state === 'suspended') AC.resume();
-}
+    function ensureAudio() {
+      if (!AC) {
+        AC = new (window.AudioContext || window.webkitAudioContext)();
+        master = AC.createGain();
+        master.gain.value = muted ? 0 : 0.85;
+        // 音乐/音效分轨: 吹灭蜡烛后音乐渐弱, 烟花声更突出
+        musicGain = AC.createGain(); musicGain.gain.value = 1;
+        sfxGain = AC.createGain(); sfxGain.gain.value = 1;
+        musicGain.connect(master); sfxGain.connect(master);
+        // 轻混响感
+        const delay = AC.createDelay(); delay.delayTime.value = 0.27;
+        const fb = AC.createGain(); fb.gain.value = 0.22;
+        const wet = AC.createGain(); wet.gain.value = 0.18;
+        master.connect(AC.destination);
+        master.connect(delay); delay.connect(fb); fb.connect(delay);
+        delay.connect(wet); wet.connect(AC.destination);
+      }
+      if (AC.state === 'suspended') AC.resume();
+    }
     function tone(f, t0, dur, vol) {
       const mk = (type, mult, v) => {
         const o = AC.createOscillator(), g = AC.createGain();
@@ -859,7 +974,7 @@ function ensureAudio(){
       // 优先播放用户自定义背景音乐, 否则循环播放合成生日歌
       if (cfg.music) {
         bgMusicEl.currentTime = 0;
-        bgMusicEl.play().catch(() => {});
+        bgMusicEl.play().catch(() => { });
         refreshBgVolume();
       } else if (AC) {
         scheduleSong();
@@ -928,13 +1043,13 @@ function ensureAudio(){
     }
 
     /* ---- 漫天烟花 & 飘零祝福 ---- */
-    const BLESSINGS = ['生日快乐', '平安喜乐','安巍', '前程似锦', '万事胜意', '得偿所愿','生日快乐',
-     '健康快乐', '友谊长存', '未来可期', '好运连连', '笑口常开', '岁岁常欢愉', '年年皆胜意','安子',
-     ' 开学', '生日快乐，安巍','愿你眼里有星河 · 心中有宇宙',' 学习进步','生日快乐，小安','生日快乐','安巍',
+    const BLESSINGS = ['生日快乐', '平安喜乐', '安巍', '前程似锦', '万事胜意', '得偿所愿', '生日快乐',
+      '健康快乐', '友谊长存', '未来可期', '好运连连', '笑口常开', '岁岁常欢愉', '年年皆胜意', '安子',
+      ' 开学', '生日快乐，安巍', '愿你眼里有星河 · 心中有宇宙', ' 学习进步', '生日快乐，小安', '生日快乐', '安巍',
       '所求皆如愿', '所行化坦途', '日日是好日', '被世界温柔以待', '眼里有光 心里有海', '好运正在派送',
-       '星辰大海为你闪耀', '又长大一岁啦', '生日快乐，万事胜意', '愿你一生努力，一生被爱', '小安','愿你一生努力，一生被爱', '愿你一生努力，一生被爱',
-       'MC小安', 'MC安子', 'MC安巍', 'MC小安', 'MC安子',
-      ];
+      '星辰大海为你闪耀', '又长大一岁啦', '生日快乐，万事胜意', '愿你一生努力，一生被爱', '小安', '愿你一生努力，一生被爱', '愿你一生努力，一生被爱',
+      'MC小安', 'MC安子', 'MC安巍', 'MC小安', 'MC安子',
+    ];
     function spawnRocket() {
       const ty = rnd(H * 0.08, H * 0.40);
       fw.push({
@@ -1057,6 +1172,7 @@ function ensureAudio(){
 
     function resetPhotos() {
       photoFall = []; pfQueue = []; pfFocus = -1; pfWait = 0; pfRestart = -1;
+      if (topCtx) topCtx.clearRect(0, 0, W, H);
     }
 
     function spawnPhotos() {
@@ -1094,11 +1210,16 @@ function ensureAudio(){
 
     function startFocus(i) {
       const p = photoFall[i];
+      const img = photoImgs[p.src];
       p.phase = 'focus';
       p.pt = 0;
       p.fx0 = p.x; p.fy0 = p.y; p.fsc0 = p.scale; p.fsx0 = p.sx;
       p.fx = L.cx;
-      p.fy = Math.min(H * 0.3, orbitGeom().ocy - 30);
+      p.fy = H * 0.42;
+      // 居中展示尺寸: 宽度最多占屏宽 46%, 高度最多占屏高 60% (约为轨道照片的 5~6 倍大)
+      const aspect = (img && img.width) ? img.height / img.width : 0.75;
+      const fw = Math.min(W * 0.46, H * 0.60 / aspect);
+      p.fsc = fw / p.w;
       pfFocus = i;
     }
 
@@ -1143,12 +1264,12 @@ function ensureAudio(){
             const k = easeOutBack(Math.min(1, p.pt / FOCUS_MOVE));
             p.x = p.fx0 + (p.fx - p.fx0) * k;
             p.y = p.fy0 + (p.fy - p.fy0) * k;
-            p.scale = p.fsc0 + (1.85 - p.fsc0) * k;
+            p.scale = p.fsc0 + (p.fsc - p.fsc0) * k;
             p.sx = p.fsx0 + (1 - p.fsx0) * k;
           } else {
             // 居中展示: 轻微呼吸
             const breathe = 1 + 0.025 * Math.sin((p.pt - FOCUS_MOVE) * 2.2);
-            p.x = p.fx; p.y = p.fy; p.scale = 1.85 * breathe; p.sx = 1;
+            p.x = p.fx; p.y = p.fy; p.scale = p.fsc * breathe; p.sx = 1;
           }
           // 闪缩白闪: 到达瞬间最亮, 快速衰减
           p.flash = Math.max(0, 1 - Math.max(0, p.pt - 0.12) / 0.8);
@@ -1165,7 +1286,7 @@ function ensureAudio(){
           const k = Math.min(1, p.pt / D);
           p.x += p.vx * dt; p.y += p.vy * dt;
           p.vy += 6 * dt;
-          p.scale = 1.85 * (1 - 0.25 * k);
+          p.scale = p.fsc * (1 - 0.25 * k);
           p.alpha = 1 - k;       // 缓慢渐隐
           if (k >= 1) p.dead = true;
         }
@@ -1187,6 +1308,39 @@ function ensureAudio(){
       }
 
       if (!anyAlive) pfRestart = 2.5;   // 全部渐隐后休息 2.5 秒再来一轮
+    }
+
+    /* 在指定画布上下文上绘制一组照片 (金色边框光晕 + 居中白闪) */
+    function drawPhotoList(c, list) {
+      for (const p of list) {
+        const img = photoImgs[p.src];
+        if (!img || !img.width) continue;
+        const w = p.w * p.scale;
+        const ih = w * img.height / img.width;
+        const focused = p.phase === 'focus';
+        const pad = focused ? 5 : 3;
+        c.save();
+        c.globalAlpha = Math.max(0, Math.min(1, p.alpha));
+        c.translate(p.x, p.y);
+        c.rotate(p.rot);
+        c.transform(p.sx, 0, 0, 1, 0, 0);   // X 轴方向压缩模拟绕蛋糕公转的透视
+        c.shadowColor = focused ? 'rgba(255,209,102,0.95)' : 'rgba(255,209,102,0.4)';
+        c.shadowBlur = focused ? 42 : 18;
+        c.fillStyle = 'rgba(255,209,102,0.9)';
+        roundRect(c, -w / 2 - pad, -ih / 2 - pad, w + pad * 2, ih + pad * 2, 10);
+        c.fill();
+        c.shadowBlur = 0;
+        c.drawImage(img, -w / 2, -ih / 2, w, ih);
+        // 居中瞬间的闪缩白闪
+        if (p.flash > 0.01) {
+          c.globalAlpha = Math.max(0, Math.min(1, p.alpha)) * p.flash * 0.85;
+          c.fillStyle = '#ffffff';
+          roundRect(c, -w / 2 - pad, -ih / 2 - pad, w + pad * 2, ih + pad * 2, 10);
+          c.fill();
+        }
+        c.restore();
+      }
+      c.globalAlpha = 1;
     }
     relightBtn.addEventListener('click', () => {
       state = 'lit'; celebrated = false; outT = 0;
@@ -1411,6 +1565,19 @@ function ensureAudio(){
       ctx.restore();
     }
     /* 蛋糕侧身若隐若现的金色渐变字: 贴柱面弧度, 边缘压暗收窄, 缓慢呼吸 */
+    /* 刻字分行: 名字较长(≥3字)时拆成两行, 上为名字, 下为"生日快乐"; 其余过长文本按中点折行 */
+    function engraveLines() {
+      const txt = engraveText || '';
+      if (txt.endsWith('生日快乐')) {
+        const name = txt.slice(0, -4);
+        if (name.length >= 3) return [name, '生日快乐'];
+      } else if (txt.length > 6) {
+        const mid = Math.ceil(txt.length / 2);
+        return [txt.slice(0, mid), txt.slice(mid)];
+      }
+      return txt ? [txt] : [];
+    }
+
     function drawCakeText(t) {
       const { cx, topY, baseY, rw, baseRy } = L;
       ctx.save();
@@ -1423,31 +1590,42 @@ function ensureAudio(){
       ctx.closePath();
       ctx.clip();
 
-      const txt = engraveText;
-      const fs = rw * 0.32;
-      const y = topY + L.cakeH * 0.56;
+      const lines = engraveLines();
+      const maxLen = Math.max(1, ...lines.map(l => l.length));
+      // 单行: 大字号垂直居中; 双行: 字号收窄自适应, 上下排开 (上名字/下生日快乐)
+      let fs, ys;
+      if (lines.length >= 2) {
+        fs = Math.min(rw * 0.27, (rw * 1.62) / (maxLen * 1.02));
+        ys = [topY + L.cakeH * 0.40, topY + L.cakeH * 0.67];
+      } else {
+        fs = rw * 0.32;
+        ys = [topY + L.cakeH * 0.56];
+      }
       ctx.font = `700 ${fs}px "PingFang SC","Microsoft YaHei",sans-serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       const step = fs * 1.02;
-      for (let i = 0; i < txt.length; i++) {
-        const x = cx + (i - (txt.length - 1) / 2) * step;
-        const u = Math.min(1, Math.abs((x - cx) / rw));
-        const surf = Math.sqrt(Math.max(0, 1 - u * u));   // 柱面光照: 中亮边暗
-        const pulse = 0.5 + 0.5 * Math.sin(t * 0.62 - i * 0.55);   // 逐字相位波浪
-        const a = (0.20 + 0.45 * pulse) * (0.3 + 0.7 * surf);
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.scale(0.6 + 0.4 * surf, 1);                  // 边缘横向收窄, 像绕在圆柱上
-        const g = ctx.createLinearGradient(0, -fs * 0.6, 0, fs * 0.6);
-        g.addColorStop(0, `rgba(255,236,200,${a})`);
-        g.addColorStop(0.55, `rgba(255,209,102,${a})`);
-        g.addColorStop(1, `rgba(226,165,74,${a * 0.85})`);
-        ctx.fillStyle = g;
-        ctx.shadowColor = `rgba(255,209,102,${0.55 * a})`;
-        ctx.shadowBlur = 5 + 9 * pulse;
-        ctx.fillText(txt[i], 0, 0);
-        ctx.restore();
-      }
+      lines.forEach((txt, li) => {
+        const y = ys[li];
+        for (let i = 0; i < txt.length; i++) {
+          const x = cx + (i - (txt.length - 1) / 2) * step;
+          const u = Math.min(1, Math.abs((x - cx) / rw));
+          const surf = Math.sqrt(Math.max(0, 1 - u * u));   // 柱面光照: 中亮边暗
+          const pulse = 0.5 + 0.5 * Math.sin(t * 0.62 - i * 0.55 - li * 1.3);   // 逐字+逐行相位波浪
+          const a = (0.20 + 0.45 * pulse) * (0.3 + 0.7 * surf);
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.scale(0.6 + 0.4 * surf, 1);                  // 边缘横向收窄, 像绕在圆柱上
+          const g = ctx.createLinearGradient(0, -fs * 0.6, 0, fs * 0.6);
+          g.addColorStop(0, `rgba(255,236,200,${a})`);
+          g.addColorStop(0.55, `rgba(255,209,102,${a})`);
+          g.addColorStop(1, `rgba(226,165,74,${a * 0.85})`);
+          ctx.fillStyle = g;
+          ctx.shadowColor = `rgba(255,209,102,${0.55 * a})`;
+          ctx.shadowBlur = 5 + 9 * pulse;
+          ctx.fillText(txt[i], 0, 0);
+          ctx.restore();
+        }
+      });
       // 表面光影压暗 (两侧+底部): 让字像"印"在蛋糕体上而非浮着
       let g = ctx.createLinearGradient(cx - rw, 0, cx + rw, 0);
       g.addColorStop(0, 'rgba(2,4,14,0.55)'); g.addColorStop(0.22, 'rgba(2,4,14,0)');
@@ -1618,47 +1796,17 @@ function ensureAudio(){
       }
       ctx.globalAlpha = 1;
 
-      // 3D 环绕照片 (椭圆轨道透视, 居中闪缩放大, 随机飘移渐隐, 金色边框光晕)
-      const drawList = [];
+      // 3D 环绕照片: 轨道照片画在主画布, 居中放大的照片画在置顶画布 (层级最高, 盖住所有文字)
+      const orbitList = [], topList = [];
       for (const p of photoFall) {
         if (p.dead || p.delay > 0) continue;
-        drawList.push(p);
+        if (p.phase === 'focus' || p.phase === 'exit') topList.push(p);
+        else orbitList.push(p);
       }
-      // 景深排序: 轨道背面的先画, 居中展示的始终最上层
-      drawList.sort((a, b) => {
-        const af = (a.phase === 'focus' || a.phase === 'exit') ? 2 : 0;
-        const bf = (b.phase === 'focus' || b.phase === 'exit') ? 2 : 0;
-        if (af !== bf) return af - bf;
-        return Math.sin(a.a) - Math.sin(b.a);
-      });
-      for (const p of drawList) {
-        const img = photoImgs[p.src];
-        if (!img || !img.width) continue;
-        const w = p.w * p.scale;
-        const ih = w * img.height / img.width;
-        const focused = p.phase === 'focus';
-        const pad = focused ? 4 : 3;
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, Math.min(1, p.alpha));
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.rot);
-        ctx.transform(p.sx, 0, 0, 1, 0, 0);   // X 轴方向压缩模拟绕蛋糕公转的透视
-        ctx.shadowColor = focused ? 'rgba(255,209,102,0.85)' : 'rgba(255,209,102,0.4)';
-        ctx.shadowBlur = focused ? 34 : 18;
-        ctx.fillStyle = 'rgba(255,209,102,0.85)';
-        roundRect(ctx, -w / 2 - pad, -ih / 2 - pad, w + pad * 2, ih + pad * 2, 8);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.drawImage(img, -w / 2, -ih / 2, w, ih);
-        // 居中瞬间的闪缩白闪
-        if (p.flash > 0.01) {
-          ctx.globalAlpha = Math.max(0, Math.min(1, p.alpha)) * p.flash * 0.85;
-          ctx.fillStyle = '#ffffff';
-          roundRect(ctx, -w / 2 - pad, -ih / 2 - pad, w + pad * 2, ih + pad * 2, 8);
-          ctx.fill();
-        }
-        ctx.restore();
-      }
+      orbitList.sort((a, b) => Math.sin(a.a) - Math.sin(b.a));   // 背面先画, 景深层次
+      drawPhotoList(ctx, orbitList);
+      topCtx.clearRect(0, 0, W, H);
+      drawPhotoList(topCtx, topList);
       ctx.globalAlpha = 1;
 
       // 烟花: 上升火箭 (拖尾光条)
@@ -1723,11 +1871,13 @@ function ensureAudio(){
     function resize() {
       DPR = Math.min(window.devicePixelRatio || 1, 2);
       W = innerWidth; H = innerHeight;
-      for (const c of [cv, bgCv, cakeCv]) { c.width = W * DPR; c.height = H * DPR; }
+      for (const c of [cv, bgCv, cakeCv, topCv]) { c.width = W * DPR; c.height = H * DPR; }
       cv.style.width = W + 'px'; cv.style.height = H + 'px';
+      topCv.style.width = W + 'px'; topCv.style.height = H + 'px';
       bgCv.getContext('2d').setTransform(DPR, 0, 0, DPR, 0, 0);
       cakeCv.getContext('2d').setTransform(DPR, 0, 0, DPR, 0, 0);
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      topCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
       layout(); renderBG();
       recalcCandles(cfg.candles);   // 必须先算蜡烛位置再画蛋糕, 否则多蜡烛会堆叠在中心
       renderCake();
@@ -1813,7 +1963,7 @@ function ensureAudio(){
       // 背景音乐
       if (cfg.music) {
         if (bgMusicEl.src !== cfg.music) bgMusicEl.src = cfg.music;
-        if (musicStarted) bgMusicEl.play().catch(() => {});
+        if (musicStarted) bgMusicEl.play().catch(() => { });
         refreshBgVolume();
       } else {
         bgMusicEl.pause();
@@ -1871,6 +2021,7 @@ function ensureAudio(){
       cfgMask.classList.add('show');
       cfgBtn.classList.add('open');
       cfgBtn.textContent = '✕';
+      topCv.classList.add('hide');   // 配置面板打开时, 置顶照片层让位于面板
     }
     function closePanel() {
       cfgPanel.classList.remove('show');
@@ -1878,6 +2029,7 @@ function ensureAudio(){
       cfgBtn.classList.remove('open');
       cfgBtn.textContent = '⚙';
       cfgConfirm.classList.remove('show');
+      topCv.classList.remove('hide');
       draft = null;
     }
     function isDirty() {
