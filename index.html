@@ -701,7 +701,7 @@
 
       { id: 'pinkheart', name: '粉恋心语', emoji: '💗', tag: '致恋人',
         sky: ['#32101f', '#200b14', '#0e0509'], blobs: [['#ff6b9a', .16], ['#ffd9e8', .07], ['#ffd166', .07], ['#b14a78', .13], ['#5b1e3e', .14]],
-        glow: ['#ff8fb8', .15], vig: .5, stars: false, orbits: false, flo: 'petal',
+        glow: ['#ff8fb8', .15], vig: .5, stars: false, orbits: false, flo: 'hearts', fwShape: 'heart',
         palette: ['#ff9ebb', '#ffc2d4', '#ffe1ec', '#ffd166', '#fff0f6', '#ff6b9d'],
         plate: ['#ffe3ee', '#f3b9cf', '#cf8aa6', '#fff0f6', '#f7cadc', '90,30,60'],
         shape: 'heart', bodyFx: 'smooth', body: ['#8e2f52', '#c95a86', '#f293b6', '#c95a86', '#8e2f52'],
@@ -710,16 +710,16 @@
 
       { id: 'redrose',   name: '炽热爱意', emoji: '🌹', tag: '致爱人',
         sky: ['#1d0609', '#120305', '#080102'], blobs: [['#8c1c2a', .20], ['#c1121f', .10], ['#ffd166', .07], ['#5a0e16', .18], ['#e05060', .08]],
-        glow: ['#d62839', .13], vig: .55, stars: false, orbits: false, flo: 'petal',
+        glow: ['#d62839', .13], vig: .55, stars: false, orbits: false, flo: 'rosePetal', fwShape: 'rose',
         palette: ['#ff5d73', '#c1121f', '#ffd166', '#ff8fa3', '#780000', '#ffe8c2'],
         plate: ['#5a0e16', '#3a0810', '#20040a', '#6e1420', '#2c060c', '10,2,4'],
-        shape: 'heart', bodyFx: 'petals', body: ['#5e0a14', '#9d1220', '#d62839', '#9d1220', '#5e0a14'],
-        topFx: 'smooth', top: '#a31624', drip: null, deco: 'roseGiant', band: null,
+        shape: 'round', bodyFx: 'roseWrap', body: ['#5e0a14', '#9d1220', '#d62839', '#9d1220', '#5e0a14'],
+        topFx: 'roseBloom', top: '#a31624', drip: null, deco: 'roseTrim', band: null,
         candle: ['#8a0f1e', '#e05060', '#5a0812'], engrave: 'gold' },
 
       { id: 'lovecream', name: '奶油情书', emoji: '💌', tag: '致恋人',
         sky: ['#57404c', '#3c2b36', '#221720'], blobs: [['#f6d5dc', .12], ['#ffc2d4', .10], ['#ffe8c2', .08], ['#8a5a68', .12]],
-        glow: ['#f3c2cf', .12], vig: .42, stars: true, orbits: false, flo: 'petal',
+        glow: ['#f3c2cf', .12], vig: .42, stars: true, orbits: false, flo: 'petal', fwShape: 'heart',
         palette: ['#ffc2d4', '#fff0f2', '#f6d5dc', '#ffd166', '#e8a5b8'],
         plate: ['#fbf3f2', '#e6cdcd', '#c3a3a8', '#fff8f6', '#f0dede', '90,60,66'],
         shape: 'heart', bodyFx: 'smooth', body: ['#d4aab2', '#f6e0e0', '#fffaf6', '#f6e0e0', '#d4aab2'],
@@ -1642,6 +1642,7 @@
     let gustAmp = 0;                      // 当前阵风强度 0~1
     const gust = { t: 0, dur: 0, dir: 1, next: 2.5 };
     let fw = [], fparts = [], flashes = [], blessings = [];   // 烟花火箭/爆炸星屑/爆炸闪光/飘零祝福
+    let frags = [], frTimer = 1;                              // 玫瑰香气飘飘光带
     let fwTimer = 0.6, blTimer = 1.4;   // 加载后很快便有烟花升起, 祝福稍后飘来
     let photoFall = [];   // 飘零的 3D 照片
     const photoImgs = {};  // base64 → Image 缓存
@@ -1832,12 +1833,36 @@
       c.fillStyle = g; c.fill();
       c.shadowBlur = 0;
       roundRect(c, -w / 2, h * 0.12, w, h * 0.4, h * 0.1); c.fillStyle = '#e9b44c'; c.fill();
-      const jewels = ['#ff5d73', '#74c0fc', '#52b788'];
+      // 金箍雕花 (细密纹路提升贵金属质感)
+      c.strokeStyle = 'rgba(122,72,20,0.5)'; c.lineWidth = Math.max(0.8, h * 0.028);
+      for (let i = 0; i < tips * 2; i++) {
+        const px = -w / 2 + (i + 0.5) * (w / (tips * 2));
+        c.beginPath(); c.moveTo(px, h * 0.16); c.quadraticCurveTo(px + h * 0.04, h * 0.32, px, h * 0.48); c.stroke();
+      }
+      // 刻面宝石: 球体渐变 + 放射切面 + 高光 + 星芒
+      const gemCut = (gx, gy, gr, col) => {
+        const gg = c.createRadialGradient(gx - gr * 0.32, gy - gr * 0.38, gr * 0.08, gx, gy, gr);
+        gg.addColorStop(0, '#ffffff'); gg.addColorStop(0.32, col); gg.addColorStop(1, shade(col, -52));
+        c.fillStyle = gg; c.beginPath(); c.arc(gx, gy, gr, 0, TAU); c.fill();
+        c.strokeStyle = 'rgba(255,255,255,0.45)'; c.lineWidth = Math.max(0.6, gr * 0.09);
+        for (let k = 0; k < 6; k++) {
+          const a = k / 6 * TAU + 0.28;
+          c.beginPath(); c.moveTo(gx, gy); c.lineTo(gx + Math.cos(a) * gr * 0.9, gy + Math.sin(a) * gr * 0.9); c.stroke();
+        }
+        c.beginPath(); c.arc(gx, gy, gr * 0.55, 0, TAU); c.stroke();
+        c.fillStyle = 'rgba(255,255,255,0.92)';
+        c.beginPath(); c.ellipse(gx - gr * 0.3, gy - gr * 0.36, gr * 0.2, gr * 0.13, -0.6, 0, TAU); c.fill();
+        drawStarSpark(c, gx + gr * 0.42, gy - gr * 0.45, gr * 0.42, '#ffffff');
+      };
+      const jewels = ['#ff5d73', '#74c0fc', '#52b788', '#c77dff'];
       for (let i = 0; i < tips; i++) {
         const px = -w / 2 + (i + 0.5) * u;
         c.fillStyle = '#fff8e0'; c.beginPath(); c.arc(px, -h * 0.12, h * 0.13, 0, TAU); c.fill();
-        c.fillStyle = jewels[i % 3]; c.beginPath(); c.arc(-w / 2 + (i + 0.5) * u, h * 0.32, h * 0.12, 0, TAU); c.fill();
+        gemCut(px, h * 0.32, h * 0.13, jewels[i % jewels.length]);
       }
+      // 正中央主宝石 (红宝石, 略大 + 双星芒)
+      gemCut(0, h * 0.3, h * 0.17, '#e0115f');
+      drawStarSpark(c, -h * 0.1, h * 0.14, h * 0.3, '#ffd166');
       c.restore();
     }
 
@@ -2273,6 +2298,9 @@
           c.lineWidth = L.s * (0.004 + R() * 0.006);
           c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + L.s * 0.01, y + L.s * 0.03, x + L.s * (R() * 0.02 - 0.01), y + L.s * 0.05); c.stroke();
         }
+        // 糕体金屑微光
+        for (let i = 0; i < 6; i++)
+          glowDot(c, cx + (R() * 2 - 1) * rw * 0.8, topY + L.cakeH * (0.15 + R() * 0.7), L.s * (0.004 + R() * 0.005), '#ffd166', 0.35 + R() * 0.3);
       } else if (th.bodyFx === 'petals') {
         // 红玫瑰瓣
         for (let i = 0; i < 16; i++) {
@@ -2286,6 +2314,47 @@
       } else if (th.bodyFx === 'snow') {
         for (let i = 0; i < 60; i++)
           glowDot(c, cx + (R() * 2 - 1) * rw * 0.92, topY + R() * L.cakeH, L.s * (0.002 + R() * 0.005), '#ffffff', 0.25 + R() * 0.5);
+      } else if (th.bodyFx === 'roseWrap') {
+        // 炽热爱意: 巨型玫瑰瓣从顶沿垂裹而上, 下半段丝绒糕体留白给刻字
+        const hangH = L.cakeH * 0.40;
+        const wrap = (a, len, wid, c1, c2, c3, tilt) => {
+          const px = cx + Math.cos(a) * rw * 0.99, py = topY + Math.sin(a) * topRy * 0.97;
+          c.save(); c.translate(px, py); c.rotate(Math.PI / 2 + tilt);   // 瓣尖向下垂
+          const pg = c.createLinearGradient(0, -len * 0.15, 0, len);
+          pg.addColorStop(0, c1); pg.addColorStop(0.55, c2); pg.addColorStop(1, c3);
+          c.fillStyle = pg;
+          c.beginPath();
+          c.moveTo(0, -len * 0.12);
+          c.bezierCurveTo(-wid, -len * 0.05, -wid * 0.92, len * 0.62, 0, len);
+          c.bezierCurveTo(wid * 0.92, len * 0.62, wid, -len * 0.05, 0, -len * 0.12);
+          c.closePath(); c.fill();
+          // 瓣缘内卷高光 + 中脉
+          c.strokeStyle = 'rgba(255,150,150,0.32)'; c.lineWidth = 1.1;
+          c.beginPath();
+          c.moveTo(-wid * 0.62, len * 0.16);
+          c.quadraticCurveTo(-wid * 0.78, len * 0.5, -wid * 0.18, len * 0.84);
+          c.stroke();
+          c.strokeStyle = 'rgba(40,0,8,0.28)'; c.lineWidth = 1.2;
+          c.beginPath(); c.moveTo(0, len * 0.05); c.quadraticCurveTo(wid * 0.1, len * 0.45, 0, len * 0.88); c.stroke();
+          c.restore();
+        };
+        // 前半圈垂瓣: 两层错位叠压 (后层深色, 前层亮色)
+        const deep = ['#7a0c18', '#a31220', '#6e0a14'], lite = ['#d62839', '#e0404f', '#b01624'];
+        for (let i = 0; i < 7; i++) {
+          const a = Math.PI * (0.10 + i / 6 * 0.80);
+          wrap(a, hangH * (0.85 + (i % 3) * 0.12), L.s * 0.075, deep[0], deep[1], deep[2], Math.sin(i * 2.3) * 0.10);
+        }
+        for (let i = 0; i < 6; i++) {
+          const a = Math.PI * (0.13 + i / 5 * 0.74);
+          wrap(a, hangH * (0.68 + (i % 2) * 0.16), L.s * 0.062, lite[0], lite[1], lite[2], Math.sin(i * 1.7) * 0.12);
+        }
+        // 垂瓣底缘投影
+        c.fillStyle = 'rgba(30,0,6,0.30)';
+        c.beginPath();
+        c.ellipse(cx, topY + topRy * 0.95 + hangH * 0.92, rw * 0.92, L.s * 0.012, 0, 0, Math.PI); c.fill();
+        // 丝绒糕体金粉
+        for (let i = 0; i < 20; i++)
+          glowDot(c, cx + (R() * 2 - 1) * rw * 0.88, topY + hangH * 1.1 + R() * (L.cakeH - hangH * 1.1), L.s * (0.0012 + R() * 0.0022), '#ffd166', 0.14 + R() * 0.3);
       } else if (th.bodyFx === 'crater') {
         for (let i = 0; i < 10; i++) {
           const x = cx + (R() * 2 - 1) * rw * 0.8, y = topY + L.cakeH * (0.15 + R() * 0.7), rr = L.s * (0.012 + R() * 0.02);
@@ -2337,6 +2406,87 @@
         drawSunglasses(c, cx, topY + L.cakeH * 0.26, rw * 0.95);
     }
 
+    /* ---- 玫瑰花瓣 (椭圆透视, 用于巨型玫瑰花顶) ---- */
+    function bloomPetal(c, x, y, len, wid, ang, squash, c1, c2, c3) {
+      c.save(); c.translate(x, y); c.rotate(ang); c.scale(1, squash);
+      const g = c.createLinearGradient(0, len * 0.45, 0, -len * 0.5);
+      g.addColorStop(0, c3); g.addColorStop(0.55, c2); g.addColorStop(1, c1);
+      c.fillStyle = g;
+      c.beginPath();
+      c.moveTo(0, len * 0.42);
+      c.bezierCurveTo(-wid, len * 0.18, -wid * 1.05, -len * 0.32, 0, -len * 0.5);
+      c.bezierCurveTo(wid * 1.05, -len * 0.32, wid, len * 0.18, 0, len * 0.42);
+      c.closePath(); c.fill();
+      // 外缘翻卷高光 (花瓣立体感的关键)
+      c.strokeStyle = 'rgba(255,170,170,0.34)'; c.lineWidth = 1.1; c.lineCap = 'round';
+      c.beginPath();
+      c.moveTo(-wid * 0.72, len * 0.06);
+      c.quadraticCurveTo(-wid * 0.92, -len * 0.2, -wid * 0.22, -len * 0.4);
+      c.stroke();
+      c.beginPath();
+      c.moveTo(wid * 0.55, len * 0.12);
+      c.quadraticCurveTo(wid * 0.82, -len * 0.12, wid * 0.2, -len * 0.34);
+      c.stroke();
+      // 中脉阴影
+      c.strokeStyle = 'rgba(50,0,10,0.22)'; c.lineWidth = 1.2;
+      c.beginPath(); c.moveTo(0, len * 0.3); c.quadraticCurveTo(wid * 0.12, 0, 0, -len * 0.36); c.stroke();
+      c.restore();
+    }
+    /* ---- 巨型立体玫瑰: 满顶螺旋花瓣 + 露珠, 蛋糕即一朵玫瑰 ---- */
+    function drawRoseBloom(c, cx, cy, rx, ry, s, R) {
+      const ring = (n, k, lenK, widK, off, cols, wrap) => {
+        const order = [];
+        for (let i = 0; i < n; i++) order.push(i);
+        order.sort((i1, i2) => Math.sin(off + i1 / n * TAU) - Math.sin(off + i2 / n * TAU));   // 后排先画
+        for (const i of order) {
+          const a = off + i / n * TAU;
+          const sinA = Math.sin(a), cosA = Math.cos(a);
+          const x = cx + cosA * rx * k, y = cy + sinA * ry * k;
+          const persp = 0.80 + 0.32 * (sinA * 0.5 + 0.5);        // 透视: 后排瓣短前排瓣长
+          const squash = 0.42 + 0.34 * (sinA * 0.5 + 0.5);
+          bloomPetal(c, x, y, rx * lenK * persp, rx * widK, wrap ? a + Math.PI * 0.94 : a + Math.PI / 2,
+            wrap ? 0.55 + 0.3 * (sinA * 0.5 + 0.5) : squash, cols[0], cols[1], cols[2]);
+        }
+      };
+      // 花下投影
+      let g = c.createRadialGradient(cx, cy + ry * 0.1, rx * 0.2, cx, cy + ry * 0.12, rx * 1.12);
+      g.addColorStop(0, 'rgba(30,0,6,0.38)'); g.addColorStop(1, 'rgba(30,0,6,0)');
+      c.fillStyle = g;
+      c.beginPath(); c.ellipse(cx, cy + ry * 0.12, rx * 1.1, ry * 1.18, 0, 0, TAU); c.fill();
+      const deep = ['#6e0a14', '#a31220', '#c11c2c'], mid = ['#9d1220', '#d62839', '#e8455a'], lite = ['#c1121f', '#e0404f', '#ff5d73'];
+      ring(8, 0.97, 0.34, 0.20, 0.10, deep, true);               // 沿沿翻卷外瓣
+      ring(9, 0.80, 0.30, 0.17, 0.00, deep, false);
+      ring(8, 0.60, 0.26, 0.15, 0.38, mid, false);
+      ring(6, 0.42, 0.23, 0.14, 0.14, mid, false);
+      ring(5, 0.24, 0.20, 0.13, 0.52, lite, false);
+      // 花心: 紧裹花瓣 + 螺旋
+      g = c.createRadialGradient(cx - rx * 0.03, cy - ry * 0.06, 1, cx, cy, rx * 0.20);
+      g.addColorStop(0, '#ff5d73'); g.addColorStop(0.6, '#c1121f'); g.addColorStop(1, '#6e0a14');
+      c.fillStyle = g;
+      c.beginPath(); c.ellipse(cx, cy, rx * 0.17, ry * 0.20, 0, 0, TAU); c.fill();
+      c.strokeStyle = '#5e0a14'; c.lineWidth = Math.max(1.4, rx * 0.045); c.lineCap = 'round';
+      c.beginPath();
+      for (let a = 0; a < Math.PI * 3.6; a += 0.2) {
+        const rr = a * rx * 0.018;
+        const qx = cx + Math.cos(a + 0.6) * rr, qy = cy + Math.sin(a + 0.6) * rr * (ry / rx);
+        a === 0 ? c.moveTo(qx, qy) : c.lineTo(qx, qy);
+      }
+      c.stroke();
+      // 露珠: 高级感点睛
+      for (let i = 0; i < 7; i++) {
+        const a = R() * TAU, k = 0.25 + R() * 0.6;
+        const x = cx + Math.cos(a) * rx * k, y = cy + Math.sin(a) * ry * k;
+        const dr = s * (0.0022 + R() * 0.0022);
+        c.fillStyle = 'rgba(255,235,240,0.5)';
+        c.beginPath(); c.arc(x, y, dr, 0, TAU); c.fill();
+        c.fillStyle = 'rgba(255,255,255,0.95)';
+        c.beginPath(); c.arc(x - dr * 0.3, y - dr * 0.35, dr * 0.35, 0, TAU); c.fill();
+      }
+      // 花顶柔光
+      c.fillStyle = 'rgba(255,200,200,0.10)';
+      c.beginPath(); c.ellipse(cx - rx * 0.2, cy - ry * 0.3, rx * 0.4, ry * 0.28, -0.4, 0, TAU); c.fill();
+    }
+
     function drawRoundTop(c, th, R) {
       const { cx, topY, rw, topRy } = L;
       const s = L.s;
@@ -2365,16 +2515,26 @@
             s * 0.0018 + R() * s * 0.002, PALETTE[(R() * 8) | 0], 0.55 + R() * 0.45);
       } else if (th.topFx === 'fruits') {
         // 鲜果环: 边缘一圈交替大块水果 (放大提艳), 中间留白刻字
+        // 糖浆镜面高光: 左上主高光 + 右下反光点 (釉面感)
+        const glaze = (gx, gy, gr) => {
+          c.fillStyle = 'rgba(255,255,255,0.55)';
+          c.beginPath(); c.ellipse(gx - gr * 0.28, gy - gr * 0.32, gr * 0.24, gr * 0.14, -0.6, 0, TAU); c.fill();
+          c.fillStyle = 'rgba(255,255,255,0.32)';
+          c.beginPath(); c.arc(gx + gr * 0.26, gy + gr * 0.18, gr * 0.08, 0, TAU); c.fill();
+        };
         const items = ['straw', 'kiwi', 'straw', 'orange', 'straw', 'blue', 'straw', 'kiwi', 'straw', 'orange', 'straw', 'blue'];
         for (let i = 0; i < 12; i++) {
           const a = i / 12 * TAU + 0.26;
           const x = cx + Math.cos(a) * rw * 0.7, y = topY + Math.sin(a) * topRy * 0.62;
           const kind = items[i % items.length];
-          if (kind === 'kiwi') drawKiwi(c, x, y, s * 0.036);
-          else if (kind === 'orange') drawOrange(c, x, y, s * 0.035);
-          else if (kind === 'straw') drawStrawberry(c, x, y, s * 0.045, a + 1.2);
-          else drawBlueberry(c, x, y, s * 0.02);
+          if (kind === 'kiwi') { drawKiwi(c, x, y, s * 0.036); glaze(x, y, s * 0.034); }
+          else if (kind === 'orange') { drawOrange(c, x, y, s * 0.035); glaze(x, y, s * 0.033); }
+          else if (kind === 'straw') { drawStrawberry(c, x, y, s * 0.045, a + 1.2); glaze(x - s * 0.004, y + s * 0.006, s * 0.042); }
+          else { drawBlueberry(c, x, y, s * 0.02); glaze(x, y, s * 0.018); }
         }
+        // 高光星芒点缀 (两处, 强化新鲜多汁感)
+        drawStarSpark(c, cx + rw * 0.36, topY - topRy * 0.5, s * 0.01, '#ffffff');
+        drawStarSpark(c, cx - rw * 0.52, topY + topRy * 0.28, s * 0.008, '#ffffff');
         // 内圈蓝莓点缀 + 薄荷叶
         for (const [u, v] of [[-0.3, -0.34], [0.32, 0.3], [0.04, 0.46], [-0.08, -0.52]])
           drawBlueberry(c, cx + rw * u, topY + topRy * v, s * 0.015);
@@ -2390,6 +2550,29 @@
         drawStrawberry(c, cx - rw * 0.3, topY + topRy * 0.3, s * 0.05, -0.5);
         drawStrawberry(c, cx + rw * 0.34, topY + topRy * 0.22, s * 0.045, 0.6);
         drawRaspberry(c, cx, topY - topRy * 0.15, s * 0.055);
+        // 23K 金箔: 不规则碎金片 (金属四段渐变 + 折光 + 星芒)
+        const goldLeaf = (gx, gy, gr, rot) => {
+          c.save(); c.translate(gx, gy); c.rotate(rot);
+          const gg = c.createLinearGradient(-gr, -gr, gr, gr);
+          gg.addColorStop(0, '#fff3b0'); gg.addColorStop(0.4, '#ffd166'); gg.addColorStop(0.72, '#e8a52a'); gg.addColorStop(1, '#b37714');
+          c.fillStyle = gg;
+          c.beginPath();
+          c.moveTo(0, -gr);
+          c.bezierCurveTo(gr * 0.9, -gr * 0.6, gr * 0.7, gr * 0.5, gr * 0.15, gr);
+          c.bezierCurveTo(-gr * 0.5, gr * 0.75, -gr * 0.95, gr * 0.1, 0, -gr);
+          c.fill();
+          c.strokeStyle = 'rgba(255,255,255,0.75)'; c.lineWidth = 0.8;
+          c.beginPath(); c.moveTo(-gr * 0.4, -gr * 0.2); c.quadraticCurveTo(0, gr * 0.1, gr * 0.3, -gr * 0.35); c.stroke();
+          drawStarSpark(c, gr * 0.22, -gr * 0.32, gr * 0.5, '#fff8dc');
+          c.restore();
+        };
+        for (let i = 0; i < 8; i++)
+          goldLeaf(cx + (R() * 2 - 1) * rw * 0.56, topY + (R() * 2 - 1) * topRy * 0.46, s * (0.013 + R() * 0.011), R() * TAU);
+        // 顶面甘那许镜面光泽 (弧形高光带)
+        const sheen = c.createRadialGradient(cx - rw * 0.28, topY - topRy * 0.32, 2, cx - rw * 0.2, topY - topRy * 0.25, rw * 0.6);
+        sheen.addColorStop(0, 'rgba(255,228,190,0.24)'); sheen.addColorStop(1, 'rgba(255,228,190,0)');
+        c.fillStyle = sheen;
+        c.beginPath(); c.ellipse(cx - rw * 0.2, topY - topRy * 0.2, rw * 0.52, topRy * 0.42, -0.35, 0, TAU); c.fill();
       } else if (th.topFx === 'billiards') {
         // 毛毡纹理
         c.globalAlpha = 0.14;
@@ -2524,6 +2707,9 @@
         c.restore();
         for (let i = 0; i < 14; i++)
           drawPearl(c, cx + (R() * 2 - 1) * rw * 0.72, topY + (R() * 2 - 1) * topRy * 0.55, s * 0.0045);
+      } else if (th.topFx === 'roseBloom') {
+        // 炽热爱意: 整个顶面就是一朵巨型玫瑰 (中心略靠后, 前缘留给蜡烛)
+        drawRoseBloom(c, cx, topY - topRy * 0.10, rw * 0.82, topRy * 0.76, s, R);
       } else if (th.topFx === 'cream' || th.topFx === 'smooth') {
         // 抹刀刮纹 + 柔和高光
         c.strokeStyle = 'rgba(255,255,255,0.28)';
@@ -2610,66 +2796,109 @@
       return `rgb(${r},${g},${b})`;
     }
 
-    /* ---- 心形蛋糕 ---- */
+    /* ---- 心形蛋糕: 爱心柱体 (挤出式 3D 立体) ---- */
     function drawHeartCake(c, th, R) {
       const f = heartFace(), s = L.s;
-      // 厚度底面
+      const dep = s * 0.075;                                    // 柱体挤出厚度
+
+      // 1) 柱体侧壁: 底面轮廓 = 正面心形下移 dep, 侧面受光更暗
       c.save();
-      heartPath(c, f.x, f.y + s * 0.022, f.w, f.h);
-      const dg = c.createLinearGradient(0, f.y, 0, f.y + f.h * 0.6);
-      dg.addColorStop(0, th.body[3]); dg.addColorStop(1, th.body[0]);
-      c.fillStyle = dg; c.fill();
+      heartPath(c, f.x, f.y + dep, f.w, f.h);
+      const sg = c.createLinearGradient(0, f.y - f.h * 0.2, 0, f.y + dep + f.h * 0.45);
+      sg.addColorStop(0, shade(th.body[1], -30));
+      sg.addColorStop(1, shade(th.body[0], -40));
+      c.fillStyle = sg; c.fill();
+      // 侧壁竖向拉丝 (挤出肌理)
+      heartPath(c, f.x, f.y + dep, f.w, f.h); c.clip();
+      for (let i = 0; i < 14; i++) {
+        const x = f.x + (R() * 2 - 1) * f.w * 0.5;
+        c.strokeStyle = `rgba(${th.plate[5]},0.16)`;
+        c.lineWidth = 1;
+        c.beginPath(); c.moveTo(x, f.y + dep * 0.2); c.lineTo(x + (R() - 0.5) * 4, f.y + dep + f.h * 0.42); c.stroke();
+      }
       c.restore();
-      // 正面心形糕体
+      // 底缘反光
+      heartPath(c, f.x, f.y + dep, f.w, f.h);
+      c.strokeStyle = 'rgba(255,255,255,0.14)'; c.lineWidth = 1.5; c.stroke();
+
+      // 2) 正面糕体 (柱面受光: 中轴亮, 轮廓压暗)
       c.save();
       heartPath(c, f.x, f.y, f.w, f.h); c.clip();
       c.fillStyle = bodyGradient(c, th, f.x - f.w / 2, f.x + f.w / 2);
-      c.fillRect(f.x - f.w / 2, f.y - f.h * 0.6, f.w, f.h);
-      if (th.bodyFx === 'petals') {
-        for (let i = 0; i < 18; i++) {
-          c.save();
-          c.translate(f.x + (R() * 2 - 1) * f.w * 0.36, f.y + (R() * 2 - 1) * f.h * 0.34);
-          c.rotate(R() * TAU);
-          const pg = c.createRadialGradient(0, 0, 1, 0, 0, s * 0.03);
-          pg.addColorStop(0, 'rgba(255,120,120,0.45)'); pg.addColorStop(1, 'rgba(110,10,20,0.5)');
-          c.fillStyle = pg; c.beginPath(); c.ellipse(0, 0, s * 0.03, s * 0.018, 0, 0, TAU); c.fill();
-          c.restore();
-        }
-      }
-      // 侧面/底部压暗
-      let g = c.createLinearGradient(f.x - f.w / 2, 0, f.x + f.w / 2, 0);
-      g.addColorStop(0, 'rgba(20,4,10,0.4)'); g.addColorStop(0.22, 'rgba(0,0,0,0)');
-      g.addColorStop(0.78, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(20,4,10,0.4)');
+      c.fillRect(f.x - f.w / 2, f.y - f.h * 0.6, f.w, f.h * 1.7);
+      let g = c.createRadialGradient(f.x - f.w * 0.12, f.y - f.h * 0.14, f.w * 0.05, f.x, f.y + f.h * 0.05, f.w * 0.74);
+      g.addColorStop(0, 'rgba(255,255,255,0.20)');
+      g.addColorStop(0.45, 'rgba(255,255,255,0.04)');
+      g.addColorStop(1, 'rgba(20,4,10,0.36)');
       c.fillStyle = g; c.fillRect(f.x - f.w / 2, f.y - f.h, f.w, f.h * 2);
-      g = c.createLinearGradient(0, f.y - f.h * 0.4, 0, f.y + f.h * 0.5);
-      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(20,4,10,0.35)');
-      c.fillStyle = g; c.fillRect(f.x - f.w / 2, f.y - f.h, f.w, f.h * 2);
-      // 粉色心形正面贴小爱心
+      // 缎面竖向光泽
+      g = c.createLinearGradient(f.x - f.w * 0.3, 0, f.x + f.w * 0.1, 0);
+      g.addColorStop(0, 'rgba(255,255,255,0)');
+      g.addColorStop(0.5, 'rgba(255,255,255,0.10)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      c.fillStyle = g; c.fillRect(f.x - f.w * 0.4, f.y - f.h * 0.5, f.w * 0.6, f.h * 1.4);
+      // 天鹅绒细闪
+      for (let i = 0; i < 16; i++)
+        glowDot(c, f.x + (R() * 2 - 1) * f.w * 0.42, f.y + (R() * 2 - 1) * f.h * 0.30, s * (0.0012 + R() * 0.002), '#ffffff', 0.18 + R() * 0.3);
+      // 粉恋心语: 玫瑰粉糕面贴立体小爱心
       if (th.id === 'pinkheart') {
-        for (const [u, v, sc] of [[-0.24, 0.06, 0.03], [0.26, 0.18, 0.024], [0.05, 0.3, 0.02]])
+        for (const [u, v, sc] of [[-0.24, 0.14, 0.03], [0.27, 0.24, 0.024], [0.02, 0.34, 0.02]])
           drawPuffHeart(c, f.x + f.w * u, f.y + f.h * v, s * sc, '#ffd0e2', '#e58aae');
       }
       c.restore();
-      // 顶部糖霜心形层 (略小略上移, 形成 3D 厚度)
+
+      // 3) 顶部糖霜心形盖 (略小略上移, 形成柱体厚度台阶)
+      const tY = f.y - s * 0.014, tW = f.w * 0.95, tH = f.h * 0.92;
       c.save();
-      c.shadowColor = 'rgba(0,0,0,0.18)'; c.shadowBlur = s * 0.02;
-      heartPath(c, f.x, f.y - s * 0.014, f.w * 0.95, f.h * 0.92);
-      const tg = c.createLinearGradient(0, f.y - f.h * 0.5, 0, f.y);
+      c.shadowColor = 'rgba(0,0,0,0.20)'; c.shadowBlur = s * 0.02; c.shadowOffsetY = s * 0.008;
+      heartPath(c, f.x, tY, tW, tH);
+      const tg = c.createLinearGradient(0, tY - tH * 0.5, 0, tY + tH * 0.3);
       tg.addColorStop(0, '#ffffff'); tg.addColorStop(0.55, th.top); tg.addColorStop(1, shade(th.top, -14));
       c.fillStyle = tg; c.fill();
-      c.shadowBlur = 0;
-      heartPath(c, f.x, f.y - s * 0.014, f.w * 0.95, f.h * 0.92); c.clip();
+      c.shadowColor = 'transparent'; c.shadowBlur = 0; c.shadowOffsetY = 0;
+      heartPath(c, f.x, tY, tW, tH); c.clip();
+      // 糖霜镜面高光 + 肩部阴影 (盖沿立体感)
+      c.fillStyle = 'rgba(255,255,255,0.30)';
+      c.beginPath(); c.ellipse(f.x - tW * 0.16, tY - tH * 0.20, tW * 0.24, tH * 0.15, -0.35, 0, TAU); c.fill();
+      c.fillStyle = 'rgba(255,255,255,0.16)';
+      c.beginPath(); c.ellipse(f.x + tW * 0.10, tY - tH * 0.30, tW * 0.10, tH * 0.07, 0.3, 0, TAU); c.fill();
+      c.strokeStyle = shade(th.top, -26); c.lineWidth = 1.4;
+      heartPath(c, f.x, tY + tH * 0.012, tW * 0.985, tH * 0.985); c.stroke();
       // 顶部糖珠
-      for (let i = 0; i < 30; i++)
-        drawPearl(c, f.x + (R() * 2 - 1) * f.w * 0.34, f.y - s * 0.014 - f.h * 0.32 + (R() * 2 - 1) * f.h * 0.18, s * (0.005 + R() * 0.005));
+      for (let i = 0; i < 26; i++)
+        drawPearl(c, f.x + (R() * 2 - 1) * f.w * 0.33, tY - tH * 0.30 + (R() * 2 - 1) * tH * 0.16, s * (0.005 + R() * 0.005));
       c.restore();
+
+      // 4) 粉恋心语: 白巧克力淋面沿糖霜边缘垂落 + 珍珠围边
+      if (th.drip) {
+        c.save();
+        heartPath(c, f.x, f.y, f.w, f.h); c.clip();
+        const n = 26;
+        for (let i = 0; i < n; i++) {
+          const t = i / n + 0.012;
+          const [px, py] = heartPoint(f.x, tY, tW * 0.985, tH * 0.985, t);
+          if (py > tY + tH * 0.18) continue;                      // 只从上半圈垂落
+          const len = s * (0.02 + (((i * 5) % 4) / 4) * 0.05), wd = s * 0.0085;
+          const dg = c.createLinearGradient(0, py, 0, py + len);
+          dg.addColorStop(0, th.drip); dg.addColorStop(1, shade(th.drip, -18));
+          c.fillStyle = dg;
+          c.beginPath();
+          c.moveTo(px - wd, py);
+          c.lineTo(px - wd * 0.88, py + len * 0.66);
+          c.quadraticCurveTo(px - wd * 0.82, py + len, px, py + len);
+          c.quadraticCurveTo(px + wd * 0.82, py + len, px + wd * 0.88, py + len * 0.66);
+          c.lineTo(px + wd, py);
+          c.closePath(); c.fill();
+        }
+        c.restore();
+      }
       // 心形边缘珍珠围边
       for (let i = 0; i < 30; i++) {
-        const [px, py] = heartPoint(f.x, f.y - s * 0.014, f.w * 0.95, f.h * 0.92, i / 30 + 0.016);
+        const [px, py] = heartPoint(f.x, tY, tW, tH, i / 30 + 0.016);
         drawPearl(c, px, py, s * 0.0062);
       }
-      // 心形边缘描光
-      heartPath(c, f.x, f.y - s * 0.014, f.w * 0.95, f.h * 0.92);
+      // 轮廓描光
+      heartPath(c, f.x, tY, tW, tH);
       c.strokeStyle = 'rgba(255,255,255,0.55)'; c.lineWidth = 2; c.stroke();
     }
 
@@ -2694,25 +2923,24 @@
           }
           break;
         }
-        case 'roseGiant': {
-          // 大朵立体红玫瑰 (三轮花瓣) + 散落花瓣 + 双叶
-          const gx = heart ? hx : cx, gy = heart ? hy + f.h * 0.02 : ty - topRy * 0.15;
-          const gr = heart ? s * 0.105 : s * 0.09;
-          drawLeaf3D(c, gx - gr * 1.3, gy + gr * 0.9, gr * 0.55, -0.7, '#2e5e33', '#5c9450');
-          drawLeaf3D(c, gx + gr * 1.3, gy + gr * 0.95, gr * 0.5, 0.6, '#2e5e33', '#5c9450');
-          drawRose3D(c, gx, gy, gr, '#e0404f', '#b01624', '#6e0a14', 0.3);
-          // 顶面散落花瓣
-          const pet = heart ? f : null;
-          for (let i = 0; i < 9; i++) {
-            const a = R() * TAU;
-            const rr = heart ? pet.w * (0.12 + R() * 0.3) : rw * (0.2 + R() * 0.62);
-            const px = (heart ? pet.x : cx) + Math.cos(a) * rr;
-            const py = (heart ? pet.y - pet.h * 0.14 : ty) + (heart ? (R() - 0.5) * pet.h * 0.5 : Math.sin(a) * topRy * 0.55);
-            c.save(); c.translate(px, py); c.rotate(R() * TAU);
+        case 'roseTrim': {
+          // 玫瑰蛋糕: 沿缘叶片 + 侧花苞点缀, 托盘散落花瓣
+          drawLeaf3D(c, cx - rw * 0.86, topY + topRy * 0.32, s * 0.062, -0.9, '#2e5e33', '#5c9450');
+          drawLeaf3D(c, cx + rw * 0.86, topY + topRy * 0.36, s * 0.056, 0.9, '#2e5e33', '#5c9450');
+          drawLeaf3D(c, cx - rw * 0.72, topY - topRy * 0.78, s * 0.048, -2.2, '#356839', '#6aa25c');
+          drawRose3D(c, cx - rw * 0.60, topY - topRy * 0.66, s * 0.030, '#e0404f', '#b01624', '#6e0a14', 0.4);
+          drawRoseBud(c, cx + rw * 0.64, topY - topRy * 0.58, s * 0.026, '#d62839', '#7a0c18');
+          // 托盘散落花瓣
+          const { baseY, baseRy } = L;
+          for (let i = 0; i < 7; i++) {
+            const a = R() * TAU, rr = rw * (1.02 + R() * 0.30);
+            c.save();
+            c.translate(cx + Math.cos(a) * rr, baseY + baseRy * (0.55 + R() * 0.85));
+            c.rotate(R() * TAU);
             const pg = c.createLinearGradient(0, -s * 0.012, 0, s * 0.012);
             pg.addColorStop(0, '#ff7a85'); pg.addColorStop(1, '#a31220');
             c.fillStyle = pg;
-            petalShape(c, s * 0.016); c.fill();
+            petalShape(c, s * 0.014); c.fill();
             c.restore();
           }
           break;
@@ -2726,6 +2954,13 @@
           drawCrown(c, cx, ty - topRy * 1.05, rw * 0.94, s * 0.078);
           for (let i = 0; i < 14; i++)
             drawPearl(c, cx + (R() * 2 - 1) * rw * 0.72, ty + (R() * 2 - 1) * topRy * 0.55, s * 0.008);
+          // 皇冠环绕星芒 (女王的闪耀感)
+          {
+            const cyC = ty - topRy * 1.05;
+            drawStarSpark(c, cx - rw * 0.55, cyC - s * 0.09, s * 0.02, '#ffd166');
+            drawStarSpark(c, cx + rw * 0.52, cyC - s * 0.11, s * 0.024, '#ffd166');
+            drawStarSpark(c, cx, cyC - s * 0.13, s * 0.016, '#fff3c4');
+          }
           break;
         case 'tulips': {
           // 郁金香花环: 沿糕体底缘弧线排布 (不遮刻字不被蜡烛挡)
@@ -2818,13 +3053,26 @@
       const th = getTheme();
       const pal = th.palette;
       const n = Math.round(Math.min(W, H) * 0.16);
-      floaters = Array.from({ length: n }, () => ({
-        kind: th.flo,
-        x: rnd(W), y: rnd(H), r: Math.pow(Math.random(), 2) * 7 + 1,
-        c: pal[(Math.random() * pal.length) | 0],
-        a: rnd(0.4, 0.95), ph: rnd(TAU), sp: rnd(0.4, 1.4),
-        vy: rnd(6, 22), vx: rnd(-8, 8), rot: rnd(TAU), vr: rnd(-1, 1)
-      }));
+      frags = [];                                             // 香气粒子随主题重置
+      floaters = Array.from({ length: n }, () => {
+        const o = {
+          kind: th.flo,
+          x: rnd(W), y: rnd(H), r: Math.pow(Math.random(), 2) * 7 + 1,
+          c: pal[(Math.random() * pal.length) | 0],
+          a: rnd(0.4, 0.95), ph: rnd(TAU), sp: rnd(0.4, 1.4),
+          vy: rnd(6, 22), vx: rnd(-8, 8), rot: rnd(TAU), vr: rnd(-1, 1)
+        };
+        if (o.kind === 'hearts') {                            // 漂浮小爱心: 更大更柔更醒目
+          o.r = rnd(2.6, 6.5); o.vy = rnd(9, 20); o.a = rnd(0.45, 0.9); o.vr = 0;
+          if (Math.random() < 0.18) o.c = '#ffd166';          // 少量金色爱心点睛
+        } else if (o.kind === 'rosePetal') {                  // 玫瑰花瓣 + 小爱心混飘
+          o.r = rnd(2.2, 5.2); o.vy = rnd(7, 18); o.a = rnd(0.4, 0.9); o.vr = rnd(-1.6, 1.6);
+          o.isHeart = Math.random() < 0.3;
+          o.c = o.isHeart ? (Math.random() < 0.4 ? '#ffd166' : '#ff9ebb')
+            : (Math.random() < 0.5 ? '#e0404f' : (Math.random() < 0.5 ? '#ff7a85' : '#c1121f'));
+        }
+        return o;
+      });
     }
     function initOrbits() {
       const pal = getTheme().palette;
@@ -2990,24 +3238,67 @@
       fw.push({
         x: rnd(W * 0.12, W * 0.88), y: H + 10, vx: rnd(-25, 25),
         vy: -Math.sqrt(2 * 130 * (H + 10 - ty)) * rnd(0.96, 1.0),   // 恰好升到目标高度
-        ty, c: PALETTE[(Math.random() * PALETTE.length) | 0]
+        ty, c: PALETTE[(Math.random() * PALETTE.length) | 0],
+        shape: getTheme().fwShape || 'burst'                        // 主题烟花形状: heart/rose/burst
       });
     }
     function explode(r) {
       boomSound();
       const n = 50 + (Math.random() * 60 | 0);
       const speed = rnd(120, 260);
+      const shape = r.shape || 'burst';
+      const heartN = shape === 'burst' ? 0 : Math.round(n * 0.60);
       for (let i = 0; i < n; i++) {
-        const a = rnd(TAU);
-        const sp = speed * rnd(0.35, 1) * (Math.random() < 0.25 ? 1.25 : 1);
-        fparts.push({
-          x: r.x, y: r.y, px: r.x, py: r.y,
-          vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-          g: rnd(50, 110), drag: rnd(1.2, 2.2),
-          age: 0, life: rnd(1.2, 2.4), r: rnd(1, 2.4),
-          c: Math.random() < 0.75 ? r.c : (Math.random() < 0.5 ? '#ffffff' : '#ffe8c2'),
-          tw: rnd(6, 14), twp: rnd(TAU)
-        });
+        if (i < heartN) {
+          // 心形烟花: 粒子沿心形轮廓外法线飞散, 低重力慢衰减 → 炸出立体爱心
+          const t = i / heartN * TAU;
+          const hx = 16 * Math.pow(Math.sin(t), 3);
+          const hy = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+          const len = Math.hypot(hx, hy) || 1;
+          const sp = speed * 0.72 * rnd(0.9, 1.05);
+          fparts.push({
+            x: r.x, y: r.y, px: r.x, py: r.y,
+            vx: hx / len * sp + rnd(-8, 8), vy: hy / len * sp + rnd(-8, 8),
+            g: rnd(24, 44), drag: rnd(1.0, 1.5),
+            age: 0, life: rnd(1.8, 2.6), r: rnd(1, 2.2),
+            c: Math.random() < 0.8 ? r.c : (Math.random() < 0.5 ? '#ffffff' : '#ffd9e8'),
+            tw: rnd(6, 14), twp: rnd(TAU)
+          });
+        } else if (shape === 'rose' && Math.random() < 0.5) {
+          // 玫瑰花瓣: 缓慢旋转飘落, 香气四散
+          fparts.push({
+            x: r.x, y: r.y, px: r.x, py: r.y,
+            vx: rnd(-70, 70), vy: rnd(-120, 30),
+            g: rnd(18, 40), drag: rnd(1.6, 2.4),
+            rot: rnd(TAU), vr: rnd(-3, 3),
+            age: 0, life: rnd(2.2, 3.4), r: rnd(2.4, 4.2),
+            c: Math.random() < 0.6 ? '#e0404f' : (Math.random() < 0.5 ? '#ff7a85' : '#c1121f'),
+            c2: '#ff9ea8', shape: 'petal',
+            tw: rnd(5, 10), twp: rnd(TAU)
+          });
+        } else {
+          const a = rnd(TAU);
+          const sp = speed * rnd(0.35, 1) * (Math.random() < 0.25 ? 1.25 : 1);
+          fparts.push({
+            x: r.x, y: r.y, px: r.x, py: r.y,
+            vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+            g: rnd(50, 110), drag: rnd(1.2, 2.2),
+            age: 0, life: rnd(1.2, 2.4), r: rnd(1, 2.4),
+            c: Math.random() < 0.75 ? r.c : (Math.random() < 0.5 ? '#ffffff' : '#ffe8c2'),
+            tw: rnd(6, 14), twp: rnd(TAU)
+          });
+        }
+      }
+      // 主题烟花: 炸开时再送出几颗渐隐小爱心
+      if (shape !== 'burst') {
+        for (let i = 0, hn = shape === 'rose' ? 4 : 6; i < hn; i++)
+          fparts.push({
+            x: r.x + rnd(-14, 14), y: r.y + rnd(-10, 10), px: r.x, py: r.y,
+            vx: rnd(-40, 40), vy: rnd(-90, -30), g: rnd(-6, 14), drag: rnd(1.2, 2),
+            age: 0, life: rnd(1.6, 2.6), r: rnd(2.2, 3.6),
+            c: shape === 'rose' ? '#ff8fa3' : (Math.random() < 0.5 ? '#ff9ebb' : '#ffd9e8'),
+            shape: 'miniheart', tw: rnd(6, 12), twp: rnd(TAU)
+          });
       }
       flashes.push({ x: r.x, y: r.y, age: 0, life: 0.35, r0: rnd(30, 60), c: r.c });
       if (Math.random() < 0.6) spawnBlessing(r.x, r.y);   // 烟花里绽出祝福
@@ -3381,6 +3672,7 @@
         const dr = Math.max(0, 1 - p.drag * dt);
         p.vx *= dr; p.vy = p.vy * dr + p.g * dt;
         p.x += p.vx * dt; p.y += p.vy * dt;
+        if (p.vr) p.rot += p.vr * dt;      // 玫瑰花瓣旋转飘落
       }
       fparts = fparts.filter(p => p.age < p.life);
       if (fparts.length > 1000) fparts.splice(0, fparts.length - 1000);   // 移动端性能保护
@@ -3389,6 +3681,22 @@
       for (const b of blessings) { b.age += dt; b.y -= b.vy * dt; }
       blessings = blessings.filter(b => b.age < b.life && b.y > -50);
       if (blessings.length > 80) blessings.splice(0, blessings.length - 80);   // 移动端性能保护
+      // 炽热爱意: 玫瑰香气袅袅升起
+      if (getTheme().id === 'redrose' && L.rw) {
+        frTimer -= dt;
+        if (frTimer <= 0) {
+          frTimer = rnd(0.4, 0.9);
+          frags.push({
+            x: L.cx + rnd(-L.rw * 0.55, L.rw * 0.55), y: L.topY + rnd(-10, 14),
+            age: 0, life: rnd(2.4, 4.0), ph: rnd(TAU),
+            sw: rnd(12, 30), ss: rnd(0.5, 1.1), r: rnd(9, 18),
+            c: Math.random() < 0.55 ? '#ffb4c4' : '#ffd9a0'
+          });
+        }
+        for (const f of frags) { f.age += dt; f.y -= (24 + 10 * Math.sin(f.ph)) * dt; }
+        frags = frags.filter(f => f.age < f.life);
+        if (frags.length > 40) frags.splice(0, frags.length - 40);   // 移动端性能保护
+      } else if (frags.length) frags = [];
       // 3D 环绕照片
       updatePhotos(dt);
       // 点击星光
@@ -3764,12 +4072,62 @@
           bg.addColorStop(1, hexA(f.c, 0));
           ctx.fillStyle = bg;
           ctx.beginPath(); ctx.arc(f.x, f.y, br, 0, TAU); ctx.fill();
+        } else if (f.kind === 'hearts') {
+          // 漂浮小爱心: 摇曳上升 + 柔光 + 高光
+          const hx = f.x + Math.sin(t * f.sp * 0.8 + f.ph) * 9;
+          ctx.save(); ctx.globalAlpha = Math.min(1, f.a * tw);
+          ctx.shadowColor = f.c; ctx.shadowBlur = 9;
+          ctx.fillStyle = f.c;
+          heartPath(ctx, hx, f.y, f.r * 2.6, f.r * 2.4); ctx.fill();
+          ctx.shadowBlur = 0;
+          heartPath(ctx, hx - f.r * 0.45, f.y - f.r * 0.55, f.r * 0.8, f.r * 0.6);
+          ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fill();
+          ctx.restore();
+        } else if (f.kind === 'rosePetal') {
+          if (f.isHeart) {
+            const hx = f.x + Math.sin(t * f.sp * 0.8 + f.ph) * 8;
+            ctx.save(); ctx.globalAlpha = Math.min(1, f.a * tw);
+            ctx.shadowColor = f.c; ctx.shadowBlur = 7;
+            ctx.fillStyle = f.c;
+            heartPath(ctx, hx, f.y, f.r * 2.4, f.r * 2.2); ctx.fill();
+            ctx.restore();
+          } else {
+            ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.rot); ctx.globalAlpha = Math.min(1, f.a * tw);
+            const pg = ctx.createLinearGradient(0, -f.r * 1.6, 0, f.r * 1.6);
+            pg.addColorStop(0, '#ff9ea8'); pg.addColorStop(1, f.c);
+            ctx.fillStyle = pg;
+            ctx.beginPath(); ctx.ellipse(0, 0, f.r * 1.55, f.r * 0.85, 0, 0, TAU); ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 0.8;
+            ctx.beginPath(); ctx.ellipse(0, 0, f.r * 1.55, f.r * 0.85, 0, 0, TAU); ctx.stroke();
+            ctx.restore();
+          }
         } else {
           glowDot(ctx, f.x, f.y, f.r, f.c, f.a * tw);
         }
       }
       ctx.globalAlpha = 1;
       ctx.restore();
+
+      // 玫瑰香气: 袅袅上升的卷曲光带 (加色发光, 若隐若现)
+      if (frags.length) {
+        ctx.save(); ctx.globalCompositeOperation = 'screen';
+        for (const f of frags) {
+          const k = Math.min(1, f.age / f.life);
+          const fi = Math.sin(Math.PI * k);
+          const x = f.x + Math.sin(t * f.ss + f.ph) * f.sw * k;
+          const yg = ctx.createLinearGradient(0, f.y - f.r * 2.2, 0, f.y + f.r * 1.1);
+          yg.addColorStop(0, hexA(f.c, 0));
+          yg.addColorStop(0.5, hexA(f.c, 0.15 * fi));
+          yg.addColorStop(1, hexA(f.c, 0));
+          ctx.strokeStyle = yg; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(x + Math.sin(t * f.ss * 1.3 + f.ph) * f.r * 0.5, f.y + f.r * 1.0);
+          ctx.quadraticCurveTo(x - f.r * 0.8, f.y - f.r * 0.3, x, f.y - f.r * 1.5);
+          ctx.stroke();
+          glowDot(ctx, x, f.y, 1.3, f.c, 0.16 * fi);
+        }
+        ctx.restore();
+      }
 
       // 烟雾
       for (const s of smoke) {
@@ -3815,11 +4173,25 @@
         ctx.beginPath(); ctx.moveTo(r.x, r.y); ctx.lineTo(r.x - r.vx * 0.05, r.y - r.vy * 0.05); ctx.stroke();
         glowDot(ctx, r.x, r.y, 1.8, r.c, 0.9);
       }
-      // 烟花: 爆炸星屑 (拖尾线段 + 闪烁坠落)
+      // 烟花: 爆炸星屑 (拖尾线段 + 闪烁坠落; 花瓣/爱心为形状粒子)
       for (const p of fparts) {
         const k = 1 - p.age / p.life;
         const a = k * (0.55 + 0.45 * Math.sin(t * p.tw + p.twp));
         if (a <= 0.01) continue;
+        if (p.shape === 'petal') {
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot || 0); ctx.globalAlpha = Math.min(1, a * 1.15);
+          const pg = ctx.createLinearGradient(0, -p.r * 1.5, 0, p.r * 1.5);
+          pg.addColorStop(0, p.c2 || p.c); pg.addColorStop(1, p.c);
+          ctx.fillStyle = pg;
+          ctx.beginPath(); ctx.ellipse(0, 0, p.r * 1.55, p.r * 0.85, 0, 0, TAU); ctx.fill();
+          ctx.restore(); continue;
+        }
+        if (p.shape === 'miniheart') {
+          ctx.save(); ctx.globalAlpha = Math.min(1, a * 1.15);
+          ctx.fillStyle = p.c; ctx.shadowColor = p.c; ctx.shadowBlur = 7;
+          heartPath(ctx, p.x, p.y, p.r * 2.7, p.r * 2.5); ctx.fill();
+          ctx.restore(); continue;
+        }
         ctx.strokeStyle = hexA(p.c, a * 0.85);
         ctx.lineWidth = p.r * 1.4;
         ctx.beginPath(); ctx.moveTo(p.px, p.py); ctx.lineTo(p.x, p.y); ctx.stroke();
